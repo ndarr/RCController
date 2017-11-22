@@ -1,0 +1,55 @@
+package com.example.nicolasdarr.rccontroller.MessageService;
+
+/**
+ * Created by Nicolas on 22.11.2017.
+ */
+
+public class RCCPMessage {
+    private static int lastSequenceNumber = 0;
+    private int sequenceNumber;
+    private EStatusCode code;
+    private int payload;
+
+    public RCCPMessage(EStatusCode code, int payload){
+        this.sequenceNumber = lastSequenceNumber + 1;
+        lastSequenceNumber = this.sequenceNumber;
+        this.code = code;
+        this.payload = payload;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof RCCPMessage)) return false;
+
+        RCCPMessage that = (RCCPMessage) o;
+
+        if (sequenceNumber != that.sequenceNumber) return false;
+        if (getPayload() != that.getPayload()) return false;
+        return getCode() == that.getCode();
+    }
+
+    @Override
+    public int hashCode() {
+        int result = sequenceNumber;
+        result = 31 * result + getCode().hashCode();
+        result = 31 * result + getPayload();
+        return result;
+    }
+
+    public EStatusCode getCode() {
+        return code;
+    }
+
+    public void setCode(EStatusCode code) {
+        this.code = code;
+    }
+
+    public int getPayload() {
+        return payload;
+    }
+
+    public void setPayload(int payload) {
+        this.payload = payload;
+    }
+}

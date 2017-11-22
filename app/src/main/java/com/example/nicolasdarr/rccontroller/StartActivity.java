@@ -12,8 +12,6 @@ import com.example.nicolasdarr.rccontroller.Controller.ControllerActivity;
 public class StartActivity extends AppCompatActivity {
 
     Button btnPairing;
-
-
     /**
      * Called when App is opened
      * @param savedInstanceState
