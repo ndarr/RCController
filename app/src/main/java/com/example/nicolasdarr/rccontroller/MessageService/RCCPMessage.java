@@ -1,5 +1,8 @@
 package com.example.nicolasdarr.rccontroller.MessageService;
 
+import com.google.common.primitives.Bytes;
+import com.google.common.primitives.UnsignedInteger;
+
 /**
  * Created by Nicolas on 22.11.2017.
  */
@@ -9,6 +12,8 @@ public class RCCPMessage {
     private int sequenceNumber;
     private EStatusCode code;
     private int payload;
+
+    //public static RCCPMessage MESSAGE_PAIRING = new RCCPMessage(EStatusCode.HELLO, );
 
     public RCCPMessage(EStatusCode code, int payload){
         this.sequenceNumber = lastSequenceNumber + 1;
@@ -51,5 +56,13 @@ public class RCCPMessage {
 
     public void setPayload(int payload) {
         this.payload = payload;
+    }
+
+    public byte[] toByteArray(){
+        UnsignedInteger sequenceNumber = UnsignedInteger.valueOf(this.sequenceNumber);
+        UnsignedInteger code = UnsignedInteger.valueOf(this.code.status);
+        UnsignedInteger payload = UnsignedInteger.valueOf(this.payload);
+        byte messageBytes[] = new byte[12];
+        return messageBytes;
     }
 }
