@@ -1,10 +1,12 @@
 package com.example.nicolasdarr.rccontroller.Car;
 
+import java.io.Serializable;
+
 /**
  * Created by Nicolas on 22.11.2017.
  */
 
-public class Car {
+public class Car implements Serializable{
     int steering;
     int throttle;
 

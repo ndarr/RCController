@@ -3,11 +3,13 @@ package com.example.nicolasdarr.rccontroller.MessageService;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.UnsignedInteger;
 
+import java.io.Serializable;
+
 /**
  * Created by Nicolas on 22.11.2017.
  */
 
-public class RCCPMessage {
+public class RCCPMessage implements Serializable{
     private static int lastSequenceNumber = 0;
     private int sequenceNumber;
     private EStatusCode code;

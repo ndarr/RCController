@@ -2,6 +2,7 @@ package com.example.nicolasdarr.rccontroller;
 
 import android.content.Intent;
 import android.os.Message;
+import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -11,6 +12,7 @@ import android.widget.Toast;
 import com.example.nicolasdarr.rccontroller.Car.Car;
 import com.example.nicolasdarr.rccontroller.Controller.ControllerActivity;
 import com.example.nicolasdarr.rccontroller.MessageService.MessageService;
+import com.example.nicolasdarr.rccontroller.Util.Devices;
 import com.ftdi.j2xx.D2xxManager;
 import com.ftdi.j2xx.FT_Device;
 
@@ -19,7 +21,6 @@ import java.io.Serializable;
 public class StartActivity extends AppCompatActivity {
 
     Button btnPairing;
-    FT_Device device;
     MessageService messageService;
     /**
      * Called when App is opened
@@ -31,18 +32,16 @@ public class StartActivity extends AppCompatActivity {
         setContentView(R.layout.activity_start);
         //Initialize UI elements
         btnPairing = (Button) findViewById(R.id.btnPairing);
-
-
         //Set Action Listeners
         btnPairing.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 //Init Device
-                //Pair
-                //Start Controller Panel
                 if(initDevice()){
                     initMessageService();
+                    //Pair
                     if(pair()){
+                        //Start Controller Panel
                         startControllerActivity();
                     }
                     else{
@@ -60,18 +59,22 @@ public class StartActivity extends AppCompatActivity {
 
     protected void startControllerActivity(){
         Intent intent = new Intent(this, ControllerActivity.class);
-        intent.putExtra("ftDevice", messageService);
+        intent.putExtra("messageService", messageService);
         startActivity(intent);
     }
 
     protected void initMessageService(){
-        messageService = new MessageService(device, new Car());
+        messageService = new MessageService(new Car());
     }
 
     protected boolean initDevice(){
+        //Delete after testing
+        if(Devices.uartDevice == null || Devices.uartDevice != null){
+            return true;
+        }
         //Open connected UART Device
         //If device is already open, return true
-        if(device != null && device.isOpen()){
+        if(Devices.uartDevice != null && Devices.uartDevice.isOpen()){
             return true;
         }
         //Try to open the device
@@ -80,9 +83,9 @@ public class StartActivity extends AppCompatActivity {
             //Check if there are devices available
             if(manager.createDeviceInfoList(this) > 0){
                 //Open the UART device
-                device = manager.openByIndex(this, 0);
+                Devices.uartDevice = manager.openByIndex(this, 0);
                 //Check if device has been opened
-                if(device != null && device.isOpen()){
+                if(Devices.uartDevice != null && Devices.uartDevice.isOpen()){
                     //Device is now open and ready to use
                     return true;
                 }
@@ -96,7 +99,6 @@ public class StartActivity extends AppCompatActivity {
     }
 
     protected boolean pair(){
-
         return true;
     }
 

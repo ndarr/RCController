@@ -13,15 +13,13 @@ import java.util.List;
 
 public class MessageService implements Serializable{
 
-    private static FT_Device device;
     private static int BUFFER_LENGTH;
     private Car car;
     private Thread senderThread;
     private Thread receiverThread;
     private List<RCCPMessage> messages = new ArrayList<>();
 
-    public MessageService(FT_Device device, Car car){
-        this.device = device;
+    public MessageService(Car car){
         this.car = car;
     }
 
