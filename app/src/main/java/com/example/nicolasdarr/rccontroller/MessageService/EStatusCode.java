@@ -1,8 +1,6 @@
 package com.example.nicolasdarr.rccontroller.MessageService;
+import java.nio.ByteBuffer;
 
-/**
- * Created by Nicolas on 22.11.2017.
- */
 
 public enum EStatusCode {
     HELLO(100, "Hello"),
@@ -40,5 +38,41 @@ public enum EStatusCode {
     EStatusCode(int status,String label){
         this.status = status;
         this.label = label;
+    }
+
+
+    public static EStatusCode statusById(int id){
+        switch (id){
+            case 100: return HELLO;
+            case 101: return ACK;
+            case 200: return CENTER_STEERING;
+            case 201: return SET_STEERING_LEFT;
+            case 202: return SET_STEERING_RIGHT;
+            case 203: return SET_STEERING_AUTO_CENTER;
+            case 204: return INCREASE_STEERING_LEFT;
+            case 205: return INCREASE_STEERING_RIGHT;
+            case 210: return EMERGENCY_BRAKE;
+            case 211: return SET_SPEED;
+            case 212: return SET_VIRTUAL_FRICTION;
+            case 213: return INCREASE_SPEED;
+            case 214: return DECREASE_SPEED;
+            case 300: return REQUEST_DISTANCE_SENSOR_VALUE;
+            case 350: return TRANSMIT_DISTANCE_SENSOR_VALUE;
+            case 400: return GENERIC_COMMUNICATION_ERROR;
+            case 401: return UNABLE_TO_CONNECT;
+            case 402: return CONNECTION_TIMEOUT;
+            case 420: return GENERIC_CAR_ERROR;
+            case 421: return STEERING_ERROR;
+            case 422: return ENGINE_ERROR;
+            case 440: return GENERIC_SENSOR_ERROR;
+            case 441: return DISTANCE_SENSOR_ERROR;
+        }
+        return null;
+    }
+
+    public static EStatusCode fromByteArray(byte[] status){
+        if(status.length != 4) return null;
+        int i = ByteBuffer.wrap(status).getInt();
+        return EStatusCode.statusById(i);
     }
 }

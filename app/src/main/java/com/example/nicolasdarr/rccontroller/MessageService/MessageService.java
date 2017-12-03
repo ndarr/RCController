@@ -1,6 +1,7 @@
 package com.example.nicolasdarr.rccontroller.MessageService;
 
 import com.example.nicolasdarr.rccontroller.Car.Car;
+import com.example.nicolasdarr.rccontroller.Util.Devices;
 import com.ftdi.j2xx.FT_Device;
 
 import java.io.Serializable;
@@ -14,27 +15,33 @@ import java.util.List;
 public class MessageService implements Serializable{
 
     private static int BUFFER_LENGTH;
-    private Car car;
     private Thread senderThread;
     private Thread receiverThread;
     private List<RCCPMessage> messages = new ArrayList<>();
 
-    public MessageService(Car car){
-        this.car = car;
+    public boolean pair() {
+        //Create Pairing message
+        RCCPMessage pairingMessage = new RCCPMessage(EStatusCode.HELLO, 0);
+        //Send Pairing message
+        sendMessage(pairingMessage);
+        //Wait for response
+        byte responseBuffer[] = new byte[12];
+
+        Devices.uartDevice.read(responseBuffer);
+
+        RCCPMessage response = RCCPMessage.parseByteArrayToRCCP(responseBuffer);
+
+        if(response.getCode() == EStatusCode.ACK){
+            return true;
+        }
+        else{
+            return false;
+        }
     }
 
-    public void pair() {
-        //device.write();
-    }
 
-    private void startSenderThread(){
-        senderThread = new Thread(){
-            @Override
-            public void run(){
-
-            }
-        };
-        senderThread.start();
+    public void sendMessage(RCCPMessage message){
+        Devices.uartDevice.write(message.toByteArray());
     }
 
     private void startReceiverThread(){
