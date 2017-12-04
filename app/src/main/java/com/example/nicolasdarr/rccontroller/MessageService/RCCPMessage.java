@@ -11,13 +11,13 @@ public class RCCPMessage implements Serializable{
     private EStatusCode code;
     private int payload;
 
-    private RCCPMessage(int sequenceNumber, EStatusCode code, int payload){
+    public RCCPMessage(int sequenceNumber, EStatusCode code, int payload){
         this.sequenceNumber = sequenceNumber;
         this.code = code;
         this.payload = payload;
     }
 
-    RCCPMessage(EStatusCode code, int payload){
+    public RCCPMessage(EStatusCode code, int payload){
         this.sequenceNumber = lastSequenceNumber + 1;
         lastSequenceNumber = this.sequenceNumber;
         this.code = code;
@@ -31,9 +31,7 @@ public class RCCPMessage implements Serializable{
 
         RCCPMessage that = (RCCPMessage) o;
 
-        if (sequenceNumber != that.sequenceNumber) return false;
-        if (getPayload() != that.getPayload()) return false;
-        return getCode() == that.getCode();
+        return sequenceNumber == that.sequenceNumber && getPayload() == that.getPayload() && getCode() == that.getCode();
     }
 
     @Override
@@ -44,10 +42,10 @@ public class RCCPMessage implements Serializable{
         return result;
     }
 
-    public EStatusCode getCode() {
+    EStatusCode getCode() {
         return code;
     }
-    
+
     public void setCode(EStatusCode code) {
         this.code = code;
     }
@@ -64,21 +62,23 @@ public class RCCPMessage implements Serializable{
         return this.sequenceNumber;
     }
 
-    byte[] toByteArray(){
+    public byte[] toByteArray(){
 
         byte[] sequenceNumberBytes = ByteBuffer.allocate(4).putInt(sequenceNumber).array();
         byte[] statusBytes = ByteBuffer.allocate(4).putInt(code.status).array();
         byte[] payloadBytes = ByteBuffer.allocate(4).putInt(payload).array();
 
         byte messageBytes[] = new byte[12];
+        //Insert
         Array.replacePart(messageBytes, sequenceNumberBytes, 0);
         Array.replacePart(messageBytes, statusBytes, 4);
         Array.replacePart(messageBytes, payloadBytes, 8);
+
         return messageBytes;
     }
 
 
-    static RCCPMessage parseByteArrayToRCCP(byte[] byteMessage){
+    public static RCCPMessage parseByteArrayToRCCP(byte[] byteMessage){
         if(byteMessage.length != 12){
             return null;
         }
