@@ -7,6 +7,7 @@ import java.util.Arrays;
 
 public class RCCPMessage implements Serializable{
     private static int lastSequenceNumber = 0;
+    private boolean acknowledged;
     private int sequenceNumber;
     private EStatusCode code;
     private int payload;
@@ -96,5 +97,9 @@ public class RCCPMessage implements Serializable{
 
         //Return parsed RCCPMessage
         return new RCCPMessage(sequenceNumber, status, payload);
+    }
+
+    public void acknowledge() {
+        acknowledged = true;
     }
 }
