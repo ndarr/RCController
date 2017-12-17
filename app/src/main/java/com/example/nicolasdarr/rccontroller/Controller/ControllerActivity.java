@@ -3,10 +3,17 @@ package com.example.nicolasdarr.rccontroller.Controller;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
+import android.view.View;
+import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.example.nicolasdarr.rccontroller.Car.Car;
+import com.example.nicolasdarr.rccontroller.MessageService.EStatusCode;
+import com.example.nicolasdarr.rccontroller.MessageService.MessageService;
+import com.example.nicolasdarr.rccontroller.MessageService.RCCPMessage;
 import com.example.nicolasdarr.rccontroller.R;
+import com.example.nicolasdarr.rccontroller.Util.Devices;
 
 
 public class ControllerActivity extends AppCompatActivity {
@@ -14,9 +21,11 @@ public class ControllerActivity extends AppCompatActivity {
     SeekBar seekBarThrottle;
     SeekBar seekBarSteer;
     TextView textViewOutput;
+    Button buttonEmergencyBreak;
 
-    static int throttle;
-    static int steering;
+    MessageService messageService;
+
+    Thread sendingThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,9 +35,12 @@ public class ControllerActivity extends AppCompatActivity {
         seekBarThrottle = (SeekBar) findViewById(R.id.seekBarThrottle);
         seekBarSteer = (SeekBar) findViewById(R.id.seekBarSteer);
         textViewOutput = (TextView) findViewById(R.id.textViewOutput);
+        buttonEmergencyBreak = (Button) findViewById(R.id.buttonEmergencyBreak);
 
         //Make text scrollable
         textViewOutput.setMovementMethod(new ScrollingMovementMethod());
+
+        messageService = (MessageService) getIntent().getSerializableExtra("messageService");
 
         //Configure SeekBars
         initSeekBars();
@@ -36,7 +48,19 @@ public class ControllerActivity extends AppCompatActivity {
         //Set listeners to value change
         initSeekBarListeners();
 
+        initEmergencyBreak();
 
+        startSending();
+    }
+
+    protected void initEmergencyBreak() {
+
+        buttonEmergencyBreak.setOnClickListener(new View.OnClickListener() {
+            @Override
+                public void onClick(View view) {
+                messageService.sendMessage(new RCCPMessage(EStatusCode.EMERGENCY_BRAKE, 0));
+            }
+        });
     }
 
     private void initSeekBars() {
@@ -53,72 +77,66 @@ public class ControllerActivity extends AppCompatActivity {
         seekBarSteer.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                final int steering = i;
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        textViewOutput.append("Steering: " + Integer.toString(steering)  + "\r\n");
-                    }
-                });
+                Car.STEERING = i;
             }
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
-
+                //Do nothing
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 int middle = seekBarSteer.getMax();
                 middle /= 2;
-                steering = middle;
+                Car.STEERING = middle;
                 seekBarSteer.setProgress(middle);
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        textViewOutput.append("Set Steering to Middle\r\n");
-                    }
-                });
             }
         });
 
         seekBarThrottle.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                final int throttle = i;
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        textViewOutput.append("Throttle: " + Integer.toString(throttle)  + "\r\n");
-                    }
-                });
+                Car.THROTTLE = i;
             }
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
-
+                //Do nothing
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 int noThrottle = 0;
-                throttle = noThrottle;
+                Car.THROTTLE = noThrottle;
                 seekBarThrottle.setProgress(noThrottle);
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        textViewOutput.append("Set Throttle to " + Integer.toString(throttle) + "\r\n");
-                    }
-                });
             }
         });
     }
 
-
     @Override
     protected void onStop() {
         super.onStop();
-        //Send disconnect message
+        //Send disconnect messages
+        try {
+            sendingThread.join();
+        } catch (InterruptedException e) {
+            System.exit(123123);
+        }
+    }
+    protected void startSending(){
+        sendingThread = new Thread(){
+            @Override
+            public void run(){
+                while(true){
+                    //Create Steering method
+                    
+                    //Create Throttle method
+                    //Send both messages
+                }
+            }
+            };
+            sendingThread.start();
     }
 
 }

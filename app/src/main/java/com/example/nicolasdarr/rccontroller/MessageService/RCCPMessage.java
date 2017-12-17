@@ -1,6 +1,5 @@
 package com.example.nicolasdarr.rccontroller.MessageService;
 
-import com.example.nicolasdarr.rccontroller.Util.Array;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -69,13 +68,14 @@ public class RCCPMessage implements Serializable{
         byte[] statusBytes = ByteBuffer.allocate(4).putInt(code.status).array();
         byte[] payloadBytes = ByteBuffer.allocate(4).putInt(payload).array();
 
-        byte messageBytes[] = new byte[12];
-        //Insert
-        Array.replacePart(messageBytes, sequenceNumberBytes, 0);
-        Array.replacePart(messageBytes, statusBytes, 4);
-        Array.replacePart(messageBytes, payloadBytes, 8);
+        ByteBuffer messageBytes = ByteBuffer.allocate(12);
 
-        return messageBytes;
+        System.out.println(messageBytes.capacity());
+        messageBytes.put(sequenceNumberBytes);
+        messageBytes.put(statusBytes);
+        messageBytes.put(payloadBytes);
+
+        return messageBytes.array();
     }
 
 
@@ -88,7 +88,6 @@ public class RCCPMessage implements Serializable{
         byte[] sequenceBytes = Arrays.copyOfRange(byteMessage, 0, 4);
         byte[] statusBytes = Arrays.copyOfRange(byteMessage, 4, 8);
         byte[] payloadBytes = Arrays.copyOfRange(byteMessage, 8, 12);
-
 
         //Convert to usable data types
         int sequenceNumber = ByteBuffer.wrap(sequenceBytes).getInt();
