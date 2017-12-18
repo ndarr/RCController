@@ -1,6 +1,7 @@
 package com.example.nicolasdarr.rccontroller.MessageService;
 
 
+import com.example.nicolasdarr.rccontroller.Util.Devices;
 import com.example.nicolasdarr.rccontroller.Util.Devices.*;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -25,7 +26,10 @@ public class MessageService implements Serializable{
     private LinkedList<RCCPMessage> sentMessages = new LinkedList<>();
 
 
-    public boolean pair() {
+    public boolean pair() throws NullPointerException{
+        if(uartDevice == null){
+            throw new NullPointerException("UART Device is not initialized!");
+        }
         //Create Pairing message
         RCCPMessage pairingMessage = new RCCPMessage(EStatusCode.HELLO, 0);
         //Send Pairing message
