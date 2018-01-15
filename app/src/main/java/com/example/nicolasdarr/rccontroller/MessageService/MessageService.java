@@ -50,20 +50,7 @@ public class MessageService implements Serializable{
         uartDevice.write(message.toByteArray());
     }
 
-    private void startReceiverThread(){
-        receiverThread = new Thread(){
-            @Override
-            public void run(){
-                while(true){
-                    byte data[] = new byte[12];
-                    uartDevice.read(data, 12);
-                    RCCPMessage message = RCCPMessage.parseByteArrayToRCCP(data);
-                    receivedMessages.add(message);
-                }
-            }
-        };
-        senderThread.start();
-    }
+
 
     private void startAcknowledgeThread(){
         new Thread(){

@@ -2,6 +2,7 @@ package com.example.nicolasdarr.rccontroller.MessageService;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 public class RCCPMessage implements Serializable{
@@ -18,10 +19,31 @@ public class RCCPMessage implements Serializable{
     }
 
     public RCCPMessage(EStatusCode code, int payload){
-        this.sequenceNumber = lastSequenceNumber + 1;
-        lastSequenceNumber = this.sequenceNumber;
+        this.sequenceNumber = lastSequenceNumber;
+        lastSequenceNumber = this.sequenceNumber + 1;
         this.code = code;
         this.payload = payload;
+    }
+
+    @Override
+    public String toString(){
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("SequenceNum: " + Integer.toString(sequenceNumber)+ "\r\n");
+        stringBuilder.append("Code: " + code.label+ "\r\n");
+        stringBuilder.append("Payload: " + Integer.toString(payload) + "\r\n");
+        return stringBuilder.toString();
+    }
+
+    public String toMinString(){
+        if(sequenceNumber==0 && payload == 0){
+            return "No Message";
+        }
+        try{
+            return Integer.toString(sequenceNumber) + " - " + code.label + " - " + Integer.toString(payload);
+        }
+        catch (Exception e){
+        }
+        return "";
     }
 
     @Override
@@ -42,7 +64,7 @@ public class RCCPMessage implements Serializable{
         return result;
     }
 
-    EStatusCode getCode() {
+    public EStatusCode getCode() {
         return code;
     }
 
@@ -63,36 +85,37 @@ public class RCCPMessage implements Serializable{
     }
 
     public byte[] toByteArray(){
-
-        byte[] sequenceNumberBytes = ByteBuffer.allocate(4).putInt(sequenceNumber).array();
-        byte[] statusBytes = ByteBuffer.allocate(4).putInt(code.status).array();
-        byte[] payloadBytes = ByteBuffer.allocate(4).putInt(payload).array();
-
         ByteBuffer messageBytes = ByteBuffer.allocate(12);
-
+        messageBytes.order(ByteOrder.LITTLE_ENDIAN);
         System.out.println(messageBytes.capacity());
-        messageBytes.put(sequenceNumberBytes);
-        messageBytes.put(statusBytes);
-        messageBytes.put(payloadBytes);
+
+        messageBytes.putInt(this.sequenceNumber);
+        messageBytes.putInt(this.code.status);
+        messageBytes.putInt(this.payload);
 
         return messageBytes.array();
     }
 
 
     public static RCCPMessage parseByteArrayToRCCP(byte[] byteMessage){
-        if(byteMessage.length != 12){
-            return null;
-        }
+                if(byteMessage.length != 12){
+                    return null;
+    }
 
-        //Subarrays from byte array
-        byte[] sequenceBytes = Arrays.copyOfRange(byteMessage, 0, 4);
-        byte[] statusBytes = Arrays.copyOfRange(byteMessage, 4, 8);
-        byte[] payloadBytes = Arrays.copyOfRange(byteMessage, 8, 12);
+
+
+        ByteBuffer sequenceBytes = ByteBuffer.wrap(Arrays.copyOfRange(byteMessage, 0, 4));
+        ByteBuffer statusBytes = ByteBuffer.wrap(Arrays.copyOfRange(byteMessage, 4, 8));
+        ByteBuffer payloadBytes = ByteBuffer.wrap(Arrays.copyOfRange(byteMessage, 8, 12));
+
+        sequenceBytes.order(ByteOrder.LITTLE_ENDIAN);
+        statusBytes.order(ByteOrder.LITTLE_ENDIAN);
+        payloadBytes.order(ByteOrder.LITTLE_ENDIAN);
 
         //Convert to usable data types
-        int sequenceNumber = ByteBuffer.wrap(sequenceBytes).getInt();
-        EStatusCode status = EStatusCode.fromByteArray(statusBytes);
-        int payload = ByteBuffer.wrap(payloadBytes).getInt();
+        int sequenceNumber = sequenceBytes.getInt();
+        EStatusCode status = EStatusCode.statusById(statusBytes.getInt());
+        int payload = payloadBytes.getInt();
 
         //Return parsed RCCPMessage
         return new RCCPMessage(sequenceNumber, status, payload);

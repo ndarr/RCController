@@ -17,6 +17,10 @@ public enum EStatusCode {
     SET_VIRTUAL_FRICTION(212, "Set Virtual Friction"),
     INCREASE_SPEED(213, "Increase Speed"),
     DECREASE_SPEED(214, "Decrease Speed"),
+    //LED transmitting test
+    LED_OFF(220, "LED Off"),
+    LED_ON(221, "LED On"),
+    LED_TOGGLE(222, "LED Toggle"),
     // status and report codes
     REQUEST_DISTANCE_SENSOR_VALUE(300, "Request Distance Sensor Value"),
     TRANSMIT_DISTANCE_SENSOR_VALUE(350, "Transmit Distance Sensor Value"),
@@ -56,6 +60,9 @@ public enum EStatusCode {
             case 212: return SET_VIRTUAL_FRICTION;
             case 213: return INCREASE_SPEED;
             case 214: return DECREASE_SPEED;
+            case 220: return LED_OFF;
+            case 221: return LED_ON;
+            case 222: return LED_TOGGLE;
             case 300: return REQUEST_DISTANCE_SENSOR_VALUE;
             case 350: return TRANSMIT_DISTANCE_SENSOR_VALUE;
             case 400: return GENERIC_COMMUNICATION_ERROR;

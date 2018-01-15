@@ -58,37 +58,14 @@ public class StartActivity extends AppCompatActivity {
     }
 
     protected boolean initDevice(){
-        //Delete after testing
-        if(Devices.uartDevice == null || Devices.uartDevice != null){
-            return true;
-        }
-        //Open connected UART Device
-        //If device is already open, return true
-        if(Devices.uartDevice != null && Devices.uartDevice.isOpen()){
-            return true;
-        }
-        //Try to open the device
-        try {
-            D2xxManager manager = D2xxManager.getInstance(this);
-            //Check if there are devices available
-            if(manager.createDeviceInfoList(this) > 0){
-                //Open the UART device
-                Devices.uartDevice = manager.openByIndex(this, 0);
-                //Check if device has been opened
-                if(Devices.uartDevice != null && Devices.uartDevice.isOpen()){
-                    //Device is now open and ready to use
-                    return true;
-                }
-            }
-        //Catch any exception occuring while opening the device
-        } catch (D2xxManager.D2xxException e) {
-            e.printStackTrace();
-        }
-        //Opening the device failed
-        return false;
+        return Devices.initDevice(this);
     }
 
     protected boolean pair(){
+        //Testing
+        if(true){
+            return true;
+        }
         return messageService.pair();
     }
 

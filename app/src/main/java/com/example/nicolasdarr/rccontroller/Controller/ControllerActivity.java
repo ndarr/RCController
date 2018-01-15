@@ -1,5 +1,7 @@
 package com.example.nicolasdarr.rccontroller.Controller;
 
+import android.os.Looper;
+import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
@@ -7,6 +9,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.nicolasdarr.rccontroller.Car.Car;
 import com.example.nicolasdarr.rccontroller.MessageService.EStatusCode;
@@ -14,6 +17,10 @@ import com.example.nicolasdarr.rccontroller.MessageService.MessageService;
 import com.example.nicolasdarr.rccontroller.MessageService.RCCPMessage;
 import com.example.nicolasdarr.rccontroller.R;
 import com.example.nicolasdarr.rccontroller.Util.Devices;
+
+import java.util.Arrays;
+
+import static com.example.nicolasdarr.rccontroller.Util.Devices.uartDevice;
 
 
 public class ControllerActivity extends AppCompatActivity {
@@ -51,6 +58,7 @@ public class ControllerActivity extends AppCompatActivity {
         initEmergencyBreak();
 
         startSending();
+        startReceiverThread();
     }
 
     protected void initEmergencyBreak() {
@@ -128,15 +136,60 @@ public class ControllerActivity extends AppCompatActivity {
         sendingThread = new Thread(){
             @Override
             public void run(){
+                int count = 1;
+                Looper.prepare();
                 while(true){
-                    //Create Steering method
-                    
-                    //Create Throttle method
-                    //Send both messages
+                    if(count % 2000 == 0){
+                        RCCPMessage message = new RCCPMessage(EStatusCode.LED_TOGGLE, 0);
+                        messageService.sendMessage(message);
+                        println("Sent: " + message.toMinString());
+                        count = 1;
+                    }
+                    count++;
+                    try {
+                        sleep(1);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
                 }
             }
             };
             sendingThread.start();
     }
+    private void startReceiverThread(){
+        new Thread(){
+            @Override
+            public void run(){
+                while(true){
+                    byte data[] = new byte[12];
+                    uartDevice.read(data, 12, 30000);
+                    RCCPMessage message = RCCPMessage.parseByteArrayToRCCP(data);
+                    String out = message.toMinString();
+                    if(out.isEmpty()){
+                        uartDevice.read(new byte[1], 1, 1000);
+                        out = Arrays.toString(data);
+                    }
+                    println("Received: " + out);
+                    /*try{
+                        if(!(message.getCode() == EStatusCode.ACK && message.getCode() != EStatusCode.HELLO)){
+                            messageService.sendMessage(new RCCPMessage(EStatusCode.ACK, message.getPayload()));
+                        }
+                    }
+                    catch(NullPointerException e){
+                        e.printStackTrace();
+                    }*/
+                }
+            }
+        }.start();
+    }
 
+    public void println(final String message){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                textViewOutput.append(message + "\r\n");
+            }
+        });
+    }
 }
