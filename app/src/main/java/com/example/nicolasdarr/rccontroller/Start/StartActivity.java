@@ -62,18 +62,15 @@ public class StartActivity extends AppCompatActivity {
     }
 
     protected boolean pair(){
-        //Testing
-        if(true){
-            return true;
+        try{
+            return messageService.pair();
+        }catch (NullPointerException e){
+            return false;
         }
-        return messageService.pair();
     }
 
-    protected void makeToast(String message){
+    protected void makeToast(String message) {
         Toast t = Toast.makeText(this, message, Toast.LENGTH_SHORT);
         t.show();
     }
-
-
-
 }
