@@ -40,26 +40,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.98" />
 
-    <TextView
-        android:id="@+id/textViewOutput"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginBottom="350dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:gravity="bottom"
-        android:maxLines="50"
-        android:scrollIndicators="right"
-        android:scrollbars="vertical"
-        android:textAlignment="center"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0" />
-
     <Button
         android:id="@+id/buttonEmergencyBreak"
         android:layout_width="wrap_content"
@@ -74,6 +54,19 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textViewOutput" />
+        app:layout_constraintTop_toBottomOf="@+id/listViewMessages" />
+
+    <ListView
+        android:id="@+id/listViewMessages"
+        android:layout_width="368dp"
+        android:layout_height="247dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:transcriptMode="alwaysScroll"
+        android:stackFromBottom="true"/>
 
 </android.support.constraint.ConstraintLayout>

@@ -1,5 +1,7 @@
 package com.example.nicolasdarr.rccontroller.MessageService;
 
+import android.content.Context;
+
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -25,25 +27,15 @@ public class RCCPMessage implements Serializable{
         this.payload = payload;
     }
 
+
     @Override
     public String toString(){
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("SequenceNum: " + Integer.toString(sequenceNumber)+ "\r\n");
-        stringBuilder.append("Code: " + code.label+ "\r\n");
-        stringBuilder.append("Payload: " + Integer.toString(payload) + "\r\n");
-        return stringBuilder.toString();
-    }
-
-    public String toMinString(){
-        if(sequenceNumber==0 && payload == 0){
-            return "No Message";
+        String minRepresent = "";
+        minRepresent += Integer.toString(this.sequenceNumber) + " - " + this.code.label + " - " + Integer.toString(this.payload);
+        if(acknowledged){
+            minRepresent += new String(Character.toChars(0x2705));
         }
-        try{
-            return Integer.toString(sequenceNumber) + " - " + code.label + " - " + Integer.toString(payload);
-        }
-        catch (Exception e){
-        }
-        return "";
+        return minRepresent;
     }
 
     @Override
@@ -98,10 +90,9 @@ public class RCCPMessage implements Serializable{
 
 
     public static RCCPMessage parseByteArrayToRCCP(byte[] byteMessage){
-                if(byteMessage.length != 12){
-                    return null;
-    }
-
+        if(byteMessage.length != 12){
+            return null;
+        }
 
 
         ByteBuffer sequenceBytes = ByteBuffer.wrap(Arrays.copyOfRange(byteMessage, 0, 4));
@@ -118,7 +109,17 @@ public class RCCPMessage implements Serializable{
         int payload = payloadBytes.getInt();
 
         //Return parsed RCCPMessage
-        return new RCCPMessage(sequenceNumber, status, payload);
+        RCCPMessage message = new RCCPMessage(sequenceNumber, status, payload);
+        return message;
+    }
+
+    public boolean isValid(){
+        if(this.code == null){
+            return false;
+        }
+        else{
+            return true;
+        }
     }
 
     public void acknowledge() {

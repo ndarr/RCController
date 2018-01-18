@@ -6,18 +6,22 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.nicolasdarr.rccontroller.Car.Car;
+import com.example.nicolasdarr.rccontroller.Car.CarController;
 import com.example.nicolasdarr.rccontroller.MessageService.EStatusCode;
 import com.example.nicolasdarr.rccontroller.MessageService.MessageService;
 import com.example.nicolasdarr.rccontroller.MessageService.RCCPMessage;
 import com.example.nicolasdarr.rccontroller.R;
 import com.example.nicolasdarr.rccontroller.Util.Devices;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import static com.example.nicolasdarr.rccontroller.Util.Devices.uartDevice;
@@ -29,7 +33,13 @@ public class ControllerActivity extends AppCompatActivity {
     SeekBar seekBarSteer;
     TextView textViewOutput;
     Button buttonEmergencyBreak;
+    ListView listViewMessages;
 
+    ArrayList<RCCPMessage> list;
+    ArrayAdapter<RCCPMessage> adapter;
+
+
+    CarController carController;
     MessageService messageService;
 
     Thread sendingThread;
@@ -41,14 +51,17 @@ public class ControllerActivity extends AppCompatActivity {
         //Init UI elements
         seekBarThrottle = (SeekBar) findViewById(R.id.seekBarThrottle);
         seekBarSteer = (SeekBar) findViewById(R.id.seekBarSteer);
-        textViewOutput = (TextView) findViewById(R.id.textViewOutput);
+        listViewMessages = (ListView) findViewById(R.id.listViewMessages);
         buttonEmergencyBreak = (Button) findViewById(R.id.buttonEmergencyBreak);
-
-        //Make text scrollable
-        textViewOutput.setMovementMethod(new ScrollingMovementMethod());
 
         messageService = (MessageService) getIntent().getSerializableExtra("messageService");
 
+        list = new ArrayList<>();
+        adapter = new ArrayAdapter<RCCPMessage>(this, android.R.layout.simple_list_item_1, messageService.sentMessages);
+        carController = new CarController();
+
+
+        listViewMessages.setAdapter(adapter);
         //Configure SeekBars
         initSeekBars();
 
@@ -67,25 +80,27 @@ public class ControllerActivity extends AppCompatActivity {
             @Override
                 public void onClick(View view) {
                 messageService.sendMessage(new RCCPMessage(EStatusCode.EMERGENCY_BRAKE, 0));
+                updateListView();
             }
         });
     }
 
     private void initSeekBars() {
-        seekBarSteer.setMax(250);
-        seekBarThrottle.setMax(100);
+        seekBarSteer.setMax(200);
+        seekBarThrottle.setMax(200);
 
         //set Steer to middle
         seekBarSteer.setProgress(seekBarSteer.getMax()/2);
         //set Throttle to lowest value
-        seekBarThrottle.setProgress(seekBarThrottle.getBottom());
+        seekBarThrottle.setProgress(seekBarThrottle.getMax()/2);
     }
 
     private void initSeekBarListeners(){
         seekBarSteer.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                Car.STEERING = i;
+                int steering = i - (seekBarThrottle.getMax() / 2);
+                carController.setSteering(steering);
             }
 
             @Override
@@ -95,9 +110,8 @@ public class ControllerActivity extends AppCompatActivity {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                int middle = seekBarSteer.getMax();
-                middle /= 2;
-                Car.STEERING = middle;
+                int middle = seekBarSteer.getMax() / 2;
+                carController.setSteering(middle);
                 seekBarSteer.setProgress(middle);
             }
         });
@@ -105,7 +119,8 @@ public class ControllerActivity extends AppCompatActivity {
         seekBarThrottle.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                Car.THROTTLE = i;
+                int throttle = i - (seekBarThrottle.getMax() / 2);
+                carController.setThrottle(throttle);
             }
 
             @Override
@@ -115,9 +130,9 @@ public class ControllerActivity extends AppCompatActivity {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                int noThrottle = 0;
-                Car.THROTTLE = noThrottle;
-                seekBarThrottle.setProgress(noThrottle);
+                int middle = seekBarSteer.getMax() / 2;
+                carController.setThrottle(middle);
+                seekBarThrottle.setProgress(middle);
             }
         });
     }
@@ -129,66 +144,59 @@ public class ControllerActivity extends AppCompatActivity {
         try {
             sendingThread.join();
         } catch (InterruptedException e) {
-            System.exit(123123);
+            System.exit(0x123);
         }
     }
     protected void startSending(){
+        final int rate = 3000;
         sendingThread = new Thread(){
             @Override
             public void run(){
-                int count = 1;
-                Looper.prepare();
+                RCCPMessage throttleMessage;
+                RCCPMessage steeringMessage;
                 while(true){
-                    if(count % 2000 == 0){
-                        RCCPMessage message = new RCCPMessage(EStatusCode.LED_TOGGLE, 0);
-                        messageService.sendMessage(message);
-                        println("Sent: " + message.toMinString());
-                        count = 1;
-                    }
-                    count++;
+                    throttleMessage = carController.getThrottleMessage();
+                    messageService.sendMessage(throttleMessage);
                     try {
-                        sleep(1);
+                        sleep(rate / 2);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-
+                    updateListView();
+                    steeringMessage = carController.getSteeringMessage();
+                    messageService.sendMessage(steeringMessage);
+                    try {
+                        sleep(rate / 2);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    updateListView();
                 }
             }
-            };
-            sendingThread.start();
+        };
+        sendingThread.start();
     }
     private void startReceiverThread(){
         new Thread(){
             @Override
             public void run(){
+                Looper.prepare();
                 while(true){
-                    byte data[] = new byte[12];
-                    uartDevice.read(data, 12, 30000);
-                    RCCPMessage message = RCCPMessage.parseByteArrayToRCCP(data);
-                    String out = message.toMinString();
-                    if(out.isEmpty()){
-                        uartDevice.read(new byte[1], 1, 1000);
-                        out = Arrays.toString(data);
-                    }
-                    println("Received: " + out);
-                    /*try{
-                        if(!(message.getCode() == EStatusCode.ACK && message.getCode() != EStatusCode.HELLO)){
-                            messageService.sendMessage(new RCCPMessage(EStatusCode.ACK, message.getPayload()));
-                        }
-                    }
-                    catch(NullPointerException e){
-                        e.printStackTrace();
-                    }*/
+                   RCCPMessage receivedMessage = messageService.readMessage(500);
+                   if(receivedMessage != null){
+                       messageService.addReceivedMessage(receivedMessage);
+                   }
+                   updateListView();
                 }
             }
         }.start();
     }
 
-    public void println(final String message){
+    public void updateListView(){
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                textViewOutput.append(message + "\r\n");
+                adapter.notifyDataSetChanged();
             }
         });
     }
