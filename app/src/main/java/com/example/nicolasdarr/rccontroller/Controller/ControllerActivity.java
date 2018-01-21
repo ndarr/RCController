@@ -1,48 +1,31 @@
 package com.example.nicolasdarr.rccontroller.Controller;
 
-import android.os.Looper;
-import android.os.Vibrator;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.method.ScrollingMovementMethod;
-import android.view.View;
+import android.support.v7.app.AppCompatActivity;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SeekBar;
-import android.widget.TextView;
-import android.widget.Toast;
 
-import com.example.nicolasdarr.rccontroller.Car.Car;
 import com.example.nicolasdarr.rccontroller.Car.CarController;
 import com.example.nicolasdarr.rccontroller.MessageService.EStatusCode;
 import com.example.nicolasdarr.rccontroller.MessageService.MessageService;
 import com.example.nicolasdarr.rccontroller.MessageService.RCCPMessage;
 import com.example.nicolasdarr.rccontroller.R;
-import com.example.nicolasdarr.rccontroller.Util.Devices;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-
-import static com.example.nicolasdarr.rccontroller.Util.Devices.uartDevice;
-
 
 public class ControllerActivity extends AppCompatActivity {
 
     SeekBar seekBarThrottle;
     SeekBar seekBarSteer;
-    TextView textViewOutput;
+
     Button buttonEmergencyBreak;
     ListView listViewMessages;
 
-    ArrayList<RCCPMessage> list;
     ArrayAdapter<RCCPMessage> adapter;
 
 
     CarController carController;
     MessageService messageService;
-
-    Thread sendingThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,13 +37,11 @@ public class ControllerActivity extends AppCompatActivity {
         listViewMessages = (ListView) findViewById(R.id.listViewMessages);
         buttonEmergencyBreak = (Button) findViewById(R.id.buttonEmergencyBreak);
 
-        messageService = (MessageService) getIntent().getSerializableExtra("messageService");
-
-        list = new ArrayList<>();
-        adapter = new ArrayAdapter<RCCPMessage>(this, android.R.layout.simple_list_item_1, messageService.sentMessages);
         carController = new CarController();
 
 
+        messageService = new MessageService(this, carController);
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, messageService.sentMessages);
         listViewMessages.setAdapter(adapter);
         //Configure SeekBars
         initSeekBars();
@@ -70,19 +51,21 @@ public class ControllerActivity extends AppCompatActivity {
 
         initEmergencyBreak();
 
-        startSending();
-        startReceiverThread();
+        messageService.start();
     }
 
     protected void initEmergencyBreak() {
 
-        buttonEmergencyBreak.setOnClickListener(new View.OnClickListener() {
-            @Override
-                public void onClick(View view) {
-                messageService.sendMessage(new RCCPMessage(EStatusCode.EMERGENCY_BRAKE, 0));
-                updateListView();
-            }
+        buttonEmergencyBreak.setOnClickListener(view -> {
+            messageService.sendMessage(new RCCPMessage(EStatusCode.EMERGENCY_BRAKE, 0));
+            updateListView();
         });
+    }
+
+    @Override
+    protected void onStop(){
+        messageService.stop();
+        super.onStop();
     }
 
     private void initSeekBars() {
@@ -137,67 +120,10 @@ public class ControllerActivity extends AppCompatActivity {
         });
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        //Send disconnect messages
-        try {
-            sendingThread.join();
-        } catch (InterruptedException e) {
-            System.exit(0x123);
-        }
-    }
-    protected void startSending(){
-        final int rate = 3000;
-        sendingThread = new Thread(){
-            @Override
-            public void run(){
-                RCCPMessage throttleMessage;
-                RCCPMessage steeringMessage;
-                while(true){
-                    throttleMessage = carController.getThrottleMessage();
-                    messageService.sendMessage(throttleMessage);
-                    try {
-                        sleep(rate / 2);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    updateListView();
-                    steeringMessage = carController.getSteeringMessage();
-                    messageService.sendMessage(steeringMessage);
-                    try {
-                        sleep(rate / 2);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    updateListView();
-                }
-            }
-        };
-        sendingThread.start();
-    }
-    private void startReceiverThread(){
-        new Thread(){
-            @Override
-            public void run(){
-                Looper.prepare();
-                while(true){
-                   RCCPMessage receivedMessage = messageService.readMessage(500);
-                   if(receivedMessage != null){
-                       messageService.addReceivedMessage(receivedMessage);
-                   }
-                   updateListView();
-                }
-            }
-        }.start();
-    }
+
+
 
     public void updateListView(){
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                adapter.notifyDataSetChanged();
-            }
-        });
+        runOnUiThread(() -> adapter.notifyDataSetChanged());
     }
 }

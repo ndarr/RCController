@@ -15,6 +15,8 @@ public class CarController {
 
     public RCCPMessage getSteeringMessage(){
         if(steering < 0){
+            //Invert because steering is negative
+            steering *= -1;
             return new RCCPMessage(EStatusCode.SET_STEERING_LEFT, steering);
         }
         else if(steering > 0){

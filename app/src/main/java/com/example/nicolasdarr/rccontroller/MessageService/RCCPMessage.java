@@ -114,12 +114,7 @@ public class RCCPMessage implements Serializable{
     }
 
     public boolean isValid(){
-        if(this.code == null){
-            return false;
-        }
-        else{
-            return true;
-        }
+        return this.code != null;
     }
 
     public void acknowledge() {
