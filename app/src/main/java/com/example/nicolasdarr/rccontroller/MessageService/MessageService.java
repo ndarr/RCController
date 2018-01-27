@@ -3,6 +3,7 @@ package com.example.nicolasdarr.rccontroller.MessageService;
 
 import android.content.Context;
 import android.support.annotation.Nullable;
+import android.widget.ListAdapter;
 
 import com.example.nicolasdarr.rccontroller.Car.CarController;
 import com.example.nicolasdarr.rccontroller.Controller.ControllerActivity;
@@ -11,6 +12,7 @@ import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static com.example.nicolasdarr.rccontroller.Util.Devices.uartDevice;
 
@@ -32,7 +34,6 @@ public class MessageService implements Serializable{
     public MessageService(Context context, CarController carController){
         this.context = context;
         this.carController = carController;
-
     }
 
     /**
@@ -77,7 +78,7 @@ public class MessageService implements Serializable{
      * Initializes and starts the thread for sending messages
      */
     private void startSending() {
-        final int rate = 3000;
+        final int rate = 1500;
         senderThread = new Thread() {
             @Override
             public void run() {
@@ -132,7 +133,7 @@ public class MessageService implements Serializable{
      */
     public void sendMessage(RCCPMessage message){
         sentMessages.add(message);
-        notifyDataset();
+        notifyDataset("Added Message");
         uartDevice.write(message.toByteArray());
         System.out.println("Sent: " + Arrays.toString(message.toByteArray()));
     }
@@ -155,7 +156,7 @@ public class MessageService implements Serializable{
             //Return the found message
             if(sentMessages.get(i).getSequenceNumber() == ackSeqNum){
                 sentMessages.get(i).acknowledge();
-                notifyDataset();
+                notifyDataset("Acknowledged Message");
             }
             i--;
         }
@@ -164,7 +165,8 @@ public class MessageService implements Serializable{
     /**
      *
      */
-    private void notifyDataset(){
+    private void notifyDataset(String message){
+        System.out.println(message);
         try{
             ControllerActivity activity = (ControllerActivity)context;
             activity.updateListView();

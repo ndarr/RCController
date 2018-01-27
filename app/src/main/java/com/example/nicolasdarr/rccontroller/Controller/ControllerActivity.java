@@ -13,6 +13,9 @@ import com.example.nicolasdarr.rccontroller.MessageService.EStatusCode;
 import com.example.nicolasdarr.rccontroller.MessageService.MessageService;
 import com.example.nicolasdarr.rccontroller.MessageService.RCCPMessage;
 import com.example.nicolasdarr.rccontroller.R;
+import com.example.nicolasdarr.rccontroller.Util.Devices;
+
+import java.util.ArrayList;
 
 public class ControllerActivity extends AppCompatActivity {
 
@@ -23,6 +26,7 @@ public class ControllerActivity extends AppCompatActivity {
     Button buttonLedTgl;
 
     ListView listViewMessages;
+    ArrayList<RCCPMessage> messages;
 
     ArrayAdapter<RCCPMessage> adapter;
 
@@ -45,8 +49,9 @@ public class ControllerActivity extends AppCompatActivity {
 
         carController = new CarController();
 
+        messages = new ArrayList<>();
         messageService = new MessageService(this, carController);
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, messageService.sentMessages);
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, messages);
         listViewMessages.setAdapter(adapter);
         //Configure SeekBars
         initSeekBars();
@@ -79,12 +84,6 @@ public class ControllerActivity extends AppCompatActivity {
                 messageService.sendMessage(new RCCPMessage(EStatusCode.EMERGENCY_BRAKE_ENGAGE, 0));
             }
         });
-    }
-
-    @Override
-    protected void onStop(){
-        messageService.stop();
-        super.onStop();
     }
 
     private void initSeekBars() {
@@ -139,10 +138,29 @@ public class ControllerActivity extends AppCompatActivity {
         });
     }
 
-
-
-
     public void updateListView(){
-        runOnUiThread(() -> adapter.notifyDataSetChanged());
+        runOnUiThread(() -> {
+            adapter.clear();
+            adapter.addAll(messageService.sentMessages);
+        });
+    }
+
+
+    @Override
+    protected void onStop(){
+        messageService.stop();
+        super.onStop();
+    }
+
+    @Override
+    protected void onPause(){
+        messageService.stop();
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume(){
+        messageService.start();
+        super.onResume();
     }
 }
