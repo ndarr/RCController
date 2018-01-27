@@ -2,6 +2,7 @@ package com.example.nicolasdarr.rccontroller.MessageService;
 
 
 import android.content.Context;
+import android.support.annotation.Nullable;
 
 import com.example.nicolasdarr.rccontroller.Car.CarController;
 import com.example.nicolasdarr.rccontroller.Controller.ControllerActivity;
@@ -34,11 +35,18 @@ public class MessageService implements Serializable{
 
     }
 
+    /**
+     * Starts the sending and receiving of messages
+     *
+     */
     public void start(){
         startSending();
         startReceiving();
     }
 
+    /**
+     * Stops the sending and receiving of messages
+     */
     public void stop(){
         try{
             receiverThread.join();
@@ -49,6 +57,9 @@ public class MessageService implements Serializable{
         }
     }
 
+    /**
+     * Initializes and starts the thread for receiving messages
+     */
     private void startReceiving(){
         receiverThread = new Thread(){
             @Override
@@ -62,6 +73,9 @@ public class MessageService implements Serializable{
     }
 
 
+    /**
+     * Initializes and starts the thread for sending messages
+     */
     private void startSending() {
         final int rate = 3000;
         senderThread = new Thread() {
@@ -90,6 +104,9 @@ public class MessageService implements Serializable{
         senderThread.start();
     }
 
+    /**
+     * Reads the message from the UART interface
+     */
     private void readMessage(){
         byte data[] = new byte[12];
         uartDevice.read(data, 12);
@@ -109,6 +126,10 @@ public class MessageService implements Serializable{
         }
     }
 
+    /**
+     * Sends a message over the UART interface and adds the message to the sent messages
+     * @param message   RCCPMessage to be sent
+     */
     public void sendMessage(RCCPMessage message){
         sentMessages.add(message);
         notifyDataset();
@@ -117,7 +138,15 @@ public class MessageService implements Serializable{
     }
 
 
+    /**
+     * Acknowledges a sent message based on a received ACK message
+     * @param acknowledgeMessage    Received ACK message
+     */
     private void acknowledgeMessage(RCCPMessage acknowledgeMessage){
+        //Quit if given message is no ACK message
+        if(acknowledgeMessage.getCode() != EStatusCode.ACK){
+            return;
+        }
         //Get SequenceNum to be checked
         int ackSeqNum = acknowledgeMessage.getPayload();
         //Find Message with seqNum starting from newest messages
@@ -132,26 +161,17 @@ public class MessageService implements Serializable{
         }
     }
 
-    private RCCPMessage findSentMessage(RCCPMessage receivedMessage){
-        //Get SequenceNum to be checked
-        int ackSeqNum = receivedMessage.getPayload();
-        //Find Message with seqNum starting from newest messages
-        int i = sentMessages.size() - 1;
-        while(i >= 0){
-            //Return the found message
-            if(sentMessages.get(i).getSequenceNumber() == ackSeqNum){
-                return sentMessages.get(i);
-            }
-            i--;
-        }
-        //No message found
-        return null;
-    }
-
-
-
+    /**
+     *
+     */
     private void notifyDataset(){
-        ControllerActivity activity = (ControllerActivity)context;
-        activity.updateListView();
+        try{
+            ControllerActivity activity = (ControllerActivity)context;
+            activity.updateListView();
+        }catch (ClassCastException e){
+            Throwable t = new Throwable("MessageService initialized with wrong activity. Context must be of type ControllerActivity");
+            e.initCause(t);
+        }
+
     }
 }

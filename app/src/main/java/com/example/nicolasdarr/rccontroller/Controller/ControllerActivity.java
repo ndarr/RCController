@@ -2,6 +2,7 @@ package com.example.nicolasdarr.rccontroller.Controller;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
@@ -19,6 +20,8 @@ public class ControllerActivity extends AppCompatActivity {
     SeekBar seekBarSteer;
 
     Button buttonEmergencyBreak;
+    Button buttonLedTgl;
+
     ListView listViewMessages;
 
     ArrayAdapter<RCCPMessage> adapter;
@@ -26,6 +29,8 @@ public class ControllerActivity extends AppCompatActivity {
 
     CarController carController;
     MessageService messageService;
+
+    boolean emergencyBreak;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,9 +41,9 @@ public class ControllerActivity extends AppCompatActivity {
         seekBarSteer = (SeekBar) findViewById(R.id.seekBarSteer);
         listViewMessages = (ListView) findViewById(R.id.listViewMessages);
         buttonEmergencyBreak = (Button) findViewById(R.id.buttonEmergencyBreak);
+        buttonLedTgl = (Button) findViewById(R.id.buttonLedTgl);
 
         carController = new CarController();
-
 
         messageService = new MessageService(this, carController);
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, messageService.sentMessages);
@@ -51,14 +56,28 @@ public class ControllerActivity extends AppCompatActivity {
 
         initEmergencyBreak();
 
+        initLedToggle();
+
         messageService.start();
     }
 
-    protected void initEmergencyBreak() {
+    private void initLedToggle() {
+        buttonLedTgl.setOnClickListener((View view) -> {
+            messageService.sendMessage(new RCCPMessage(EStatusCode.LED_TOGGLE, 0));
+        });
+    }
 
-        buttonEmergencyBreak.setOnClickListener(view -> {
-            messageService.sendMessage(new RCCPMessage(EStatusCode.EMERGENCY_BRAKE, 0));
-            updateListView();
+    protected void initEmergencyBreak() {
+        buttonEmergencyBreak.setOnClickListener((View view) -> {
+
+            if(emergencyBreak){
+                //Release Emergency break
+                messageService.sendMessage(new RCCPMessage(EStatusCode.EMERGENCY_BRAKE_DISENGAGE, 0));
+            }
+            else{
+                //Set Emergency break
+                messageService.sendMessage(new RCCPMessage(EStatusCode.EMERGENCY_BRAKE_ENGAGE, 0));
+            }
         });
     }
 

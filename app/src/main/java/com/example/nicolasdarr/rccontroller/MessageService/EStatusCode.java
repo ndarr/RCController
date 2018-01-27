@@ -1,6 +1,4 @@
 package com.example.nicolasdarr.rccontroller.MessageService;
-import java.nio.ByteBuffer;
-
 
 public enum EStatusCode {
     HELLO(100, "Hello"),
@@ -12,11 +10,10 @@ public enum EStatusCode {
     SET_STEERING_AUTO_CENTER(203, "Steering Auto Center"),
     INCREASE_STEERING_LEFT(204, "Increase Steering Left"),
     INCREASE_STEERING_RIGHT(205, "Increase Steering Right"),
-    EMERGENCY_BRAKE(210, "Emergency Break"),
+    EMERGENCY_BRAKE_ENGAGE(210, "Emergency Break"),
     SET_SPEED(211, "Set Speed"),
     SET_VIRTUAL_FRICTION(212, "Set Virtual Friction"),
-    INCREASE_SPEED(213, "Increase Speed"),
-    DECREASE_SPEED(214, "Decrease Speed"),
+    EMERGENCY_BRAKE_DISENGAGE(213, "Increase Speed"),
     //LED transmitting test
     LED_OFF(220, "LED Off"),
     LED_ON(221, "LED On"),
@@ -45,6 +42,12 @@ public enum EStatusCode {
     }
 
 
+    /**
+     * Determines the status code based on a given status id
+     * @param id    id of the status code
+     * @return      enum item identified by the id
+     *              NULL if nothing fit
+     */
     public static EStatusCode statusById(int id){
         switch (id){
             case 100: return HELLO;
@@ -55,11 +58,10 @@ public enum EStatusCode {
             case 203: return SET_STEERING_AUTO_CENTER;
             case 204: return INCREASE_STEERING_LEFT;
             case 205: return INCREASE_STEERING_RIGHT;
-            case 210: return EMERGENCY_BRAKE;
+            case 210: return EMERGENCY_BRAKE_ENGAGE;
             case 211: return SET_SPEED;
             case 212: return SET_VIRTUAL_FRICTION;
-            case 213: return INCREASE_SPEED;
-            case 214: return DECREASE_SPEED;
+            case 213: return EMERGENCY_BRAKE_DISENGAGE;
             case 220: return LED_OFF;
             case 221: return LED_ON;
             case 222: return LED_TOGGLE;
@@ -73,13 +75,8 @@ public enum EStatusCode {
             case 422: return ENGINE_ERROR;
             case 440: return GENERIC_SENSOR_ERROR;
             case 441: return DISTANCE_SENSOR_ERROR;
+            //To be changed to GENERIC COMMUNICATION ERROR instead of null
+            default:  return null;
         }
-        return null;
-    }
-
-    public static EStatusCode fromByteArray(byte[] status){
-        if(status.length != 4) return null;
-        int i = ByteBuffer.wrap(status).getInt();
-        return EStatusCode.statusById(i);
     }
 }
