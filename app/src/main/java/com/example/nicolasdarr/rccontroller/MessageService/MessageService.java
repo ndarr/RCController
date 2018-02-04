@@ -31,6 +31,11 @@ public class MessageService implements Serializable{
 
     private CarController carController;
 
+    /**
+     * Constructor setting up a MessageService with a CarController containing all values and a Context to display information
+     * @param context       Context to enable notifying about UI changes. Must be of Type ControllerActivity due to compatibility issues
+     * @param carController CarController holding the current state of the controlled car
+     */
     public MessageService(Context context, CarController carController){
         this.context = context;
         this.carController = carController;
@@ -78,31 +83,51 @@ public class MessageService implements Serializable{
      * Initializes and starts the thread for sending messages
      */
     private void startSending() {
-        final int rate = 1500;
+        final int messageOffset = 1000;
         senderThread = new Thread() {
             @Override
             public void run() {
-                RCCPMessage throttleMessage;
-                RCCPMessage steeringMessage;
-                while (true) {
-                    throttleMessage = carController.getThrottleMessage();
-                    sendMessage(throttleMessage);
-                    try {
-                        sleep(rate / 2);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                int distReqCounter = 1;
+                while(true){
+                    sendControlMessages(messageOffset);
+                    if(distReqCounter % 10 == 0){
+                        sendDistanceRequestMessage(messageOffset);
                     }
-                    steeringMessage = carController.getSteeringMessage();
-                    sendMessage(steeringMessage);
-                    try {
-                        sleep(rate / 2);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    distReqCounter++;
                 }
             }
         };
         senderThread.start();
+    }
+
+
+    private void sendDistanceRequestMessage(int offset){
+        RCCPMessage distReqMessage = new RCCPMessage(EStatusCode.REQUEST_DISTANCE_SENSOR_VALUE, 0);
+        sendMessage(distReqMessage);
+        try {
+            senderThread.sleep(offset);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sendControlMessages(int offset){
+        RCCPMessage throttleMessage;
+        RCCPMessage steeringMessage;
+            throttleMessage = carController.getThrottleMessage();
+            sendMessage(throttleMessage);
+            try {
+                senderThread.sleep(offset);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            steeringMessage = carController.getSteeringMessage();
+            sendMessage(steeringMessage);
+            try {
+                senderThread.sleep(offset);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
     }
 
     /**
@@ -118,12 +143,17 @@ public class MessageService implements Serializable{
             uartDevice.read(new byte[1], 1);
         }
         else{
-            if(message.getCode() == EStatusCode.ACK){
-                acknowledgeMessage(message);
-            }
-            else{
-                //TODO: Do something with other messages
-            }
+            handleReceivedMessage(message);
+        }
+    }
+
+
+    private void handleReceivedMessage(final RCCPMessage receivedMessage){
+
+        switch (receivedMessage.getCode()){
+            case ACK: acknowledgeMessage(receivedMessage); break;
+            case TRANSMIT_DISTANCE_SENSOR_VALUE: updateDistanceValue(receivedMessage.getPayload()); break;
+            default: System.out.println("Could not find MessageType: " + receivedMessage.getCode().label);
         }
     }
 
@@ -163,7 +193,7 @@ public class MessageService implements Serializable{
     }
 
     /**
-     *
+     *  Notifies the UI Thread that the message set has been changed
      */
     private void notifyDataset(String message){
         System.out.println(message);
@@ -174,6 +204,9 @@ public class MessageService implements Serializable{
             Throwable t = new Throwable("MessageService initialized with wrong activity. Context must be of type ControllerActivity");
             e.initCause(t);
         }
+    }
 
+    private void updateDistanceValue(int value){
+        System.out.println("Distance Sensor Value:" + Integer.toString(value));
     }
 }
