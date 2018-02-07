@@ -39,6 +39,7 @@ public class ControllerActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        System.out.println("Running OnCreate!");
         setContentView(R.layout.activity_controller);
         //Init UI elements
         seekBarThrottle = (SeekBar) findViewById(R.id.seekBarThrottle);
@@ -156,11 +157,5 @@ public class ControllerActivity extends AppCompatActivity {
     protected void onPause(){
         messageService.stop();
         super.onPause();
-    }
-
-    @Override
-    protected void onResume(){
-        messageService.start();
-        super.onResume();
     }
 }

@@ -7,6 +7,7 @@ import android.widget.ListAdapter;
 
 import com.example.nicolasdarr.rccontroller.Car.CarController;
 import com.example.nicolasdarr.rccontroller.Controller.ControllerActivity;
+import com.felhr.usbserial.UsbSerialInterface;
 
 import java.io.Serializable;
 
@@ -24,12 +25,37 @@ public class MessageService implements Serializable{
 
     public ArrayList<RCCPMessage> sentMessages = new ArrayList<>();
 
-    private Thread senderThread;
-    private Thread receiverThread;
+    private static Thread senderThread;
+    private static Thread receiverThread;
+
+    private byte[] byteBuffer = new byte[12];
 
     private Context context;
 
     private CarController carController;
+
+    private UsbSerialInterface.UsbReadCallback mCallback = data -> {
+
+        System.out.println("Rcvd: " + Arrays.toString(data));
+        if(data.length != 12){
+            System.out.println("Invalid message length");
+            return;
+        }
+        RCCPMessage message = RCCPMessage.parseByteArrayToRCCP(data);
+        //TODO: Change offset at first message
+        if(!message.isValid()){
+            //uartDevice.read(new byte[1], 1);
+            System.out.println("Message not valid");
+        }
+        else{
+            if(message.getCode() == EStatusCode.ACK){
+                acknowledgeMessage(message);
+            }
+            else{
+                //TODO: Do something with other messages
+            }
+        }
+    };
 
     public MessageService(Context context, CarController carController){
         this.context = context;
@@ -41,8 +67,9 @@ public class MessageService implements Serializable{
      *
      */
     public void start(){
+        System.out.println("Starting Threads!");
+        uartDevice.read(mCallback);
         startSending();
-        startReceiving();
     }
 
     /**
@@ -58,27 +85,15 @@ public class MessageService implements Serializable{
         }
     }
 
-    /**
-     * Initializes and starts the thread for receiving messages
-     */
-    private void startReceiving(){
-        receiverThread = new Thread(){
-            @Override
-            public void run(){
-                while(true){
-                    readMessage();
-                }
-            }
-        };
-        receiverThread.start();
+    public boolean isRunning(){
+        return senderThread.isAlive() || receiverThread.isAlive();
     }
-
 
     /**
      * Initializes and starts the thread for sending messages
      */
     private void startSending() {
-        final int rate = 1500;
+        final int rate = 100;
         senderThread = new Thread() {
             @Override
             public void run() {
@@ -89,6 +104,7 @@ public class MessageService implements Serializable{
                     sendMessage(throttleMessage);
                     try {
                         sleep(rate / 2);
+                        System.out.println("Sleeping after throttle message");
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -96,6 +112,7 @@ public class MessageService implements Serializable{
                     sendMessage(steeringMessage);
                     try {
                         sleep(rate / 2);
+                        System.out.println("Sleeping after steering message");
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -103,28 +120,6 @@ public class MessageService implements Serializable{
             }
         };
         senderThread.start();
-    }
-
-    /**
-     * Reads the message from the UART interface
-     */
-    private void readMessage(){
-        byte data[] = new byte[12];
-        uartDevice.read(data, 12);
-        System.out.println("Rcvd: " + Arrays.toString(data));
-        RCCPMessage message = RCCPMessage.parseByteArrayToRCCP(data);
-        //TODO: Change offset at first message
-        if(!message.isValid()){
-            uartDevice.read(new byte[1], 1);
-        }
-        else{
-            if(message.getCode() == EStatusCode.ACK){
-                acknowledgeMessage(message);
-            }
-            else{
-                //TODO: Do something with other messages
-            }
-        }
     }
 
     /**
@@ -162,18 +157,22 @@ public class MessageService implements Serializable{
         }
     }
 
+
+    int counter = 1;
     /**
      *
      */
     private void notifyDataset(String message){
-        System.out.println(message);
-        try{
-            ControllerActivity activity = (ControllerActivity)context;
-            activity.updateListView();
-        }catch (ClassCastException e){
-            Throwable t = new Throwable("MessageService initialized with wrong activity. Context must be of type ControllerActivity");
-            e.initCause(t);
+        if(counter % 10 == 0){
+            System.out.println(message);
+            try{
+                ControllerActivity activity = (ControllerActivity)context;
+                activity.updateListView();
+            }catch (ClassCastException e){
+                Throwable t = new Throwable("MessageService initialized with wrong activity. Context must be of type ControllerActivity");
+                e.initCause(t);
+            }
         }
-
+        counter++;
     }
 }
