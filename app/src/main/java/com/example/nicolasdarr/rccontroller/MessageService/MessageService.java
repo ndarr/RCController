@@ -140,6 +140,36 @@ public class MessageService implements Serializable{
         senderThread.start();
     }
 
+
+    private void sendDistanceRequestMessage(int offset){
+        RCCPMessage distReqMessage = new RCCPMessage(EStatusCode.REQUEST_DISTANCE_SENSOR_VALUE, 0);
+        sendMessage(distReqMessage);
+        try {
+            senderThread.sleep(offset);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sendControlMessages(int offset){
+        RCCPMessage throttleMessage;
+        RCCPMessage steeringMessage;
+            throttleMessage = carController.getThrottleMessage();
+            sendMessage(throttleMessage);
+            try {
+                senderThread.sleep(offset);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            steeringMessage = carController.getSteeringMessage();
+            sendMessage(steeringMessage);
+            try {
+                senderThread.sleep(offset);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+    }
+
     /**
      * Sends a message over the UART interface and adds the message to the sent messages
      * @param message   RCCPMessage to be sent
@@ -179,7 +209,7 @@ public class MessageService implements Serializable{
 
     int counter = 1;
     /**
-     *
+     *  Notifies the UI Thread that the message set has been changed
      */
     private void notifyDataset(String message){
         if(counter % 1 == 0){
