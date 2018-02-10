@@ -11,6 +11,17 @@ public class Array<T>{
         }
     }
 
+    public static byte[] concatenate(byte[] a, byte[] b){
+        byte erg[] = new byte[a.length+b.length];
+        for(int i = 0; i < a.length; i++){
+            erg[i] = a[i];
+        }
+        for(int i = 0; i < b.length; i++){
+            erg[a.length + i] = b[i];
+        }
+        return erg;
+    }
+
     public static byte[] leftShiftByteArray(byte[] array, int i){
         for(int j = i, n = 0; j < array.length; j++, i++){
             array[n] = array[j];

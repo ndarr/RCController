@@ -7,6 +7,7 @@ import android.widget.ListAdapter;
 
 import com.example.nicolasdarr.rccontroller.Car.CarController;
 import com.example.nicolasdarr.rccontroller.Controller.ControllerActivity;
+import com.example.nicolasdarr.rccontroller.Util.Array;
 import com.felhr.usbserial.UsbSerialInterface;
 
 import java.io.Serializable;
@@ -16,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.example.nicolasdarr.rccontroller.Util.Devices.uartDevice;
+import static java.util.Arrays.copyOfRange;
 
 /**
  * Created by Nicolas on 22.11.2017.
@@ -28,31 +30,52 @@ public class MessageService implements Serializable{
     private static Thread senderThread;
     private static Thread receiverThread;
 
-    private byte[] byteBuffer = new byte[12];
+
+
+    public int numAck = 0;
+    private byte[] byteBuffer;
 
     private Context context;
 
     private CarController carController;
 
     private UsbSerialInterface.UsbReadCallback mCallback = data -> {
+        if(byteBuffer != null){
+            data = Array.concatenate(byteBuffer, data);
+            byteBuffer = null;
+        }
+        System.out.println("Rcvd RawBytes: " + Arrays.toString(data));
+        ArrayList<RCCPMessage> receivedMessages = new ArrayList<>();
+        int numMessages = data.length / 12;
+        if(data.length % 12 == 0){
+            System.out.println("Even message count");
+        }
+        byte[] subdata;
+        int i;
+        for(i = 0; i < numMessages; i++){
+            subdata = Arrays.copyOfRange(data , 0+12*i, 12+12*i);
+            System.out.println("Subdata ("+ Integer.toString(i) +"): " + Arrays.toString(subdata));
+            receivedMessages.add(RCCPMessage.parseByteArrayToRCCP(subdata));
+        }
+        System.out.println("ValueI:" + Integer.toString(i));
+        if(12+12*i < data.length){
+            //Take rest
+            byteBuffer = Arrays.copyOfRange(data, 12+12*1, data.length);
+            System.out.println("Rest: " + Arrays.toString(byteBuffer));
 
-        System.out.println("Rcvd: " + Arrays.toString(data));
-        if(data.length != 12){
-            System.out.println("Invalid message length");
-            return;
         }
-        RCCPMessage message = RCCPMessage.parseByteArrayToRCCP(data);
-        //TODO: Change offset at first message
-        if(!message.isValid()){
-            //uartDevice.read(new byte[1], 1);
-            System.out.println("Message not valid");
-        }
-        else{
-            if(message.getCode() == EStatusCode.ACK){
-                acknowledgeMessage(message);
+        for (RCCPMessage message: receivedMessages) {
+            if(message == null || !message.isValid()){
+                //uartDevice.read(new byte[1], 1);
+                System.out.println("Message not valid");
             }
             else{
-                //TODO: Do something with other messages
+                if(message.getCode() == EStatusCode.ACK){
+                    acknowledgeMessage(message);
+                }
+                else{
+                    //TODO: Do something with other messages
+                }
             }
         }
     };
@@ -76,13 +99,8 @@ public class MessageService implements Serializable{
      * Stops the sending and receiving of messages
      */
     public void stop(){
-        try{
-            receiverThread.join();
-            senderThread.join();
-        }
-        catch (InterruptedException e){
-            e.printStackTrace();
-        }
+        receiverThread.interrupt();
+        senderThread.interrupt();
     }
 
     public boolean isRunning(){
@@ -93,7 +111,7 @@ public class MessageService implements Serializable{
      * Initializes and starts the thread for sending messages
      */
     private void startSending() {
-        final int rate = 100;
+        final int rate = 200;
         senderThread = new Thread() {
             @Override
             public void run() {
@@ -103,7 +121,7 @@ public class MessageService implements Serializable{
                     throttleMessage = carController.getThrottleMessage();
                     sendMessage(throttleMessage);
                     try {
-                        sleep(rate / 2);
+                        sleep(rate);
                         System.out.println("Sleeping after throttle message");
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -111,7 +129,7 @@ public class MessageService implements Serializable{
                     steeringMessage = carController.getSteeringMessage();
                     sendMessage(steeringMessage);
                     try {
-                        sleep(rate / 2);
+                        sleep(rate);
                         System.out.println("Sleeping after steering message");
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -151,6 +169,7 @@ public class MessageService implements Serializable{
             //Return the found message
             if(sentMessages.get(i).getSequenceNumber() == ackSeqNum){
                 sentMessages.get(i).acknowledge();
+                numAck++;
                 notifyDataset("Acknowledged Message");
             }
             i--;
@@ -163,7 +182,7 @@ public class MessageService implements Serializable{
      *
      */
     private void notifyDataset(String message){
-        if(counter % 10 == 0){
+        if(counter % 1 == 0){
             System.out.println(message);
             try{
                 ControllerActivity activity = (ControllerActivity)context;

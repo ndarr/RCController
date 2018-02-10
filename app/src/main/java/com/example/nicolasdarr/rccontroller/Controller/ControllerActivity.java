@@ -7,6 +7,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SeekBar;
+import android.widget.TextView;
 
 import com.example.nicolasdarr.rccontroller.Car.CarController;
 import com.example.nicolasdarr.rccontroller.MessageService.EStatusCode;
@@ -24,6 +25,8 @@ public class ControllerActivity extends AppCompatActivity {
 
     Button buttonEmergencyBreak;
     Button buttonLedTgl;
+
+    TextView textViewAckPerc;
 
     ListView listViewMessages;
     ArrayList<RCCPMessage> messages;
@@ -47,6 +50,8 @@ public class ControllerActivity extends AppCompatActivity {
         listViewMessages = (ListView) findViewById(R.id.listViewMessages);
         buttonEmergencyBreak = (Button) findViewById(R.id.buttonEmergencyBreak);
         buttonLedTgl = (Button) findViewById(R.id.buttonLedTgl);
+
+        textViewAckPerc = (TextView) findViewById(R.id.textViewAckPerc);
 
         carController = new CarController();
 
@@ -143,6 +148,8 @@ public class ControllerActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             adapter.clear();
             adapter.addAll(messageService.sentMessages);
+            int percentage = (int)((((double)messageService.numAck)/messageService.sentMessages.size())*100);
+            textViewAckPerc.setText(Integer.toString(percentage) + "%");
         });
     }
 
