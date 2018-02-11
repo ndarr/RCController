@@ -2,9 +2,8 @@ package com.example.nicolasdarr.rccontroller.MessageService;
 
 
 import android.content.Context;
-import android.support.annotation.Nullable;
-import android.widget.ListAdapter;
-
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import com.example.nicolasdarr.rccontroller.Car.CarController;
 import com.example.nicolasdarr.rccontroller.Controller.ControllerActivity;
 import com.example.nicolasdarr.rccontroller.Util.Array;
@@ -14,10 +13,8 @@ import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import static com.example.nicolasdarr.rccontroller.Util.Devices.uartDevice;
-import static java.util.Arrays.copyOfRange;
 
 /**
  * Created by Nicolas on 22.11.2017.
@@ -28,7 +25,6 @@ public class MessageService implements Serializable{
     public ArrayList<RCCPMessage> sentMessages = new ArrayList<>();
 
     private static Thread senderThread;
-    private static Thread receiverThread;
 
 
 
@@ -39,29 +35,34 @@ public class MessageService implements Serializable{
 
     private CarController carController;
 
+
+    //TODO: Cleanup this method
     private UsbSerialInterface.UsbReadCallback mCallback = data -> {
+
         if(byteBuffer != null){
             data = Array.concatenate(byteBuffer, data);
             byteBuffer = null;
         }
+
+        if(data.length < 12){
+            byteBuffer = data;
+            return;
+        }
+
         System.out.println("Rcvd RawBytes: " + Arrays.toString(data));
         ArrayList<RCCPMessage> receivedMessages = new ArrayList<>();
         int numMessages = data.length / 12;
-        if(data.length % 12 == 0){
-            System.out.println("Even message count");
-        }
+
         byte[] subdata;
         int i;
         for(i = 0; i < numMessages; i++){
-            subdata = Arrays.copyOfRange(data , 0+12*i, 12+12*i);
-            System.out.println("Subdata ("+ Integer.toString(i) +"): " + Arrays.toString(subdata));
+            subdata = Arrays.copyOfRange(data , 12*i, 12*(i+1));
             receivedMessages.add(RCCPMessage.parseByteArrayToRCCP(subdata));
         }
-        System.out.println("ValueI:" + Integer.toString(i));
-        if(12+12*i < data.length){
+
+        if(data.length - 12*(i+1) > 0){
             //Take rest
-            byteBuffer = Arrays.copyOfRange(data, 12+12*1, data.length);
-            System.out.println("Rest: " + Arrays.toString(byteBuffer));
+            byteBuffer = Arrays.copyOfRange(data, 12*(i+1), data.length);
 
         }
         for (RCCPMessage message: receivedMessages) {
@@ -74,7 +75,9 @@ public class MessageService implements Serializable{
                     acknowledgeMessage(message);
                 }
                 else{
-                    //TODO: Do something with other messages
+                    if(message.getCode() == EStatusCode.TRANSMIT_DISTANCE_SENSOR_VALUE){
+                        updateDistance(message.getPayload());
+                    }
                 }
             }
         }
@@ -90,7 +93,6 @@ public class MessageService implements Serializable{
      *
      */
     public void start(){
-        System.out.println("Starting Threads!");
         uartDevice.read(mCallback);
         startSending();
     }
@@ -99,19 +101,21 @@ public class MessageService implements Serializable{
      * Stops the sending and receiving of messages
      */
     public void stop(){
-        receiverThread.interrupt();
-        senderThread.interrupt();
-    }
+        try{
+            senderThread.interrupt();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
 
-    public boolean isRunning(){
-        return senderThread.isAlive() || receiverThread.isAlive();
     }
 
     /**
      * Initializes and starts the thread for sending messages
      */
+    //TODO: Cleanup this method
     private void startSending() {
-        final int rate = 200;
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        final int rate = 1000 / Integer.parseInt(preferences.getString("messages_per_second", "5"));
         senderThread = new Thread() {
             @Override
             public void run() {
@@ -122,7 +126,6 @@ public class MessageService implements Serializable{
                     sendMessage(throttleMessage);
                     try {
                         sleep(rate);
-                        System.out.println("Sleeping after throttle message");
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -130,44 +133,14 @@ public class MessageService implements Serializable{
                     sendMessage(steeringMessage);
                     try {
                         sleep(rate);
-                        System.out.println("Sleeping after steering message");
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
             }
         };
+        senderThread.setName("Sender Thread");
         senderThread.start();
-    }
-
-
-    private void sendDistanceRequestMessage(int offset){
-        RCCPMessage distReqMessage = new RCCPMessage(EStatusCode.REQUEST_DISTANCE_SENSOR_VALUE, 0);
-        sendMessage(distReqMessage);
-        try {
-            senderThread.sleep(offset);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void sendControlMessages(int offset){
-        RCCPMessage throttleMessage;
-        RCCPMessage steeringMessage;
-            throttleMessage = carController.getThrottleMessage();
-            sendMessage(throttleMessage);
-            try {
-                senderThread.sleep(offset);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            steeringMessage = carController.getSteeringMessage();
-            sendMessage(steeringMessage);
-            try {
-                senderThread.sleep(offset);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
     }
 
     /**
@@ -176,9 +149,8 @@ public class MessageService implements Serializable{
      */
     public void sendMessage(RCCPMessage message){
         sentMessages.add(message);
-        notifyDataset("Added Message");
+        notifyDataset();
         uartDevice.write(message.toByteArray());
-        System.out.println("Sent: " + Arrays.toString(message.toByteArray()));
     }
 
 
@@ -200,28 +172,33 @@ public class MessageService implements Serializable{
             if(sentMessages.get(i).getSequenceNumber() == ackSeqNum){
                 sentMessages.get(i).acknowledge();
                 numAck++;
-                notifyDataset("Acknowledged Message");
+                notifyDataset();
             }
             i--;
         }
     }
 
-
-    int counter = 1;
     /**
      *  Notifies the UI Thread that the message set has been changed
      */
-    private void notifyDataset(String message){
-        if(counter % 1 == 0){
-            System.out.println(message);
-            try{
-                ControllerActivity activity = (ControllerActivity)context;
-                activity.updateListView();
-            }catch (ClassCastException e){
-                Throwable t = new Throwable("MessageService initialized with wrong activity. Context must be of type ControllerActivity");
-                e.initCause(t);
-            }
+    private void notifyDataset(){
+        try{
+            ControllerActivity activity = (ControllerActivity)context;
+            activity.updateListView();
+        }catch (ClassCastException e){
+            Throwable t = new Throwable("MessageService initialized with wrong activity. Context must be of type ControllerActivity");
+            e.initCause(t);
         }
-        counter++;
+    }
+
+
+    private void updateDistance(int distance){
+        try{
+            ControllerActivity activity = (ControllerActivity)context;
+            activity.updateDistanceView(distance);
+        }catch (ClassCastException e) {
+            Throwable t = new Throwable("MessageService initialized with wrong activity. Context must be of type ControllerActivity");
+            e.initCause(t);
+        }
     }
 }

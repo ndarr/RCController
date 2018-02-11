@@ -1,7 +1,5 @@
 package com.example.nicolasdarr.rccontroller.MessageService;
 
-import android.content.Context;
-
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -25,6 +23,49 @@ public class RCCPMessage implements Serializable{
         lastSequenceNumber = this.sequenceNumber + 1;
         this.code = code;
         this.payload = payload;
+    }
+
+
+    public byte[] toByteArray(){
+        ByteBuffer messageBytes = ByteBuffer.allocate(12);
+        messageBytes.order(ByteOrder.LITTLE_ENDIAN);
+
+        messageBytes.putInt(this.sequenceNumber);
+        messageBytes.putInt(this.code.status);
+        messageBytes.putInt(this.payload);
+
+        return messageBytes.array();
+    }
+
+    public static RCCPMessage parseByteArrayToRCCP(byte[] byteMessage){
+        if(byteMessage.length != 12){
+            return null;
+        }
+
+
+        ByteBuffer sequenceBytes = ByteBuffer.wrap(Arrays.copyOfRange(byteMessage, 0, 4));
+        ByteBuffer statusBytes = ByteBuffer.wrap(Arrays.copyOfRange(byteMessage, 4, 8));
+        ByteBuffer payloadBytes = ByteBuffer.wrap(Arrays.copyOfRange(byteMessage, 8, 12));
+
+        sequenceBytes.order(ByteOrder.LITTLE_ENDIAN);
+        statusBytes.order(ByteOrder.LITTLE_ENDIAN);
+        payloadBytes.order(ByteOrder.LITTLE_ENDIAN);
+
+        //Convert to usable data types
+        int sequenceNumber = sequenceBytes.getInt();
+        EStatusCode status = EStatusCode.statusById(statusBytes.getInt());
+        int payload = payloadBytes.getInt();
+
+        //Return parsed RCCPMessage
+        return new RCCPMessage(sequenceNumber, status, payload);
+    }
+
+    boolean isValid(){
+        return this.code != null;
+    }
+
+    void acknowledge() {
+        acknowledged = true;
     }
 
 
@@ -56,7 +97,7 @@ public class RCCPMessage implements Serializable{
         return result;
     }
 
-    public EStatusCode getCode() {
+    EStatusCode getCode() {
         return code;
     }
 
@@ -64,7 +105,7 @@ public class RCCPMessage implements Serializable{
         this.code = code;
     }
 
-    public int getPayload() {
+    int getPayload() {
         return payload;
     }
 
@@ -72,52 +113,9 @@ public class RCCPMessage implements Serializable{
         this.payload = payload;
     }
 
-    public int getSequenceNumber(){
+    int getSequenceNumber(){
         return this.sequenceNumber;
     }
 
-    public byte[] toByteArray(){
-        ByteBuffer messageBytes = ByteBuffer.allocate(12);
-        messageBytes.order(ByteOrder.LITTLE_ENDIAN);
-        System.out.println(messageBytes.capacity());
 
-        messageBytes.putInt(this.sequenceNumber);
-        messageBytes.putInt(this.code.status);
-        messageBytes.putInt(this.payload);
-
-        return messageBytes.array();
-    }
-
-
-    public static RCCPMessage parseByteArrayToRCCP(byte[] byteMessage){
-        if(byteMessage.length != 12){
-            return null;
-        }
-
-
-        ByteBuffer sequenceBytes = ByteBuffer.wrap(Arrays.copyOfRange(byteMessage, 0, 4));
-        ByteBuffer statusBytes = ByteBuffer.wrap(Arrays.copyOfRange(byteMessage, 4, 8));
-        ByteBuffer payloadBytes = ByteBuffer.wrap(Arrays.copyOfRange(byteMessage, 8, 12));
-
-        sequenceBytes.order(ByteOrder.LITTLE_ENDIAN);
-        statusBytes.order(ByteOrder.LITTLE_ENDIAN);
-        payloadBytes.order(ByteOrder.LITTLE_ENDIAN);
-
-        //Convert to usable data types
-        int sequenceNumber = sequenceBytes.getInt();
-        EStatusCode status = EStatusCode.statusById(statusBytes.getInt());
-        int payload = payloadBytes.getInt();
-
-        //Return parsed RCCPMessage
-        RCCPMessage message = new RCCPMessage(sequenceNumber, status, payload);
-        return message;
-    }
-
-    public boolean isValid(){
-        return this.code != null;
-    }
-
-    public void acknowledge() {
-        acknowledged = true;
-    }
 }

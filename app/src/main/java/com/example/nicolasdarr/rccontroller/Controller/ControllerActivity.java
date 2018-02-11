@@ -6,6 +6,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -14,7 +15,6 @@ import com.example.nicolasdarr.rccontroller.MessageService.EStatusCode;
 import com.example.nicolasdarr.rccontroller.MessageService.MessageService;
 import com.example.nicolasdarr.rccontroller.MessageService.RCCPMessage;
 import com.example.nicolasdarr.rccontroller.R;
-import com.example.nicolasdarr.rccontroller.Util.Devices;
 
 import java.util.ArrayList;
 
@@ -22,6 +22,8 @@ public class ControllerActivity extends AppCompatActivity {
 
     SeekBar seekBarThrottle;
     SeekBar seekBarSteer;
+
+    ProgressBar progressBarDistanceSensor;
 
     Button buttonEmergencyBreak;
     Button buttonLedTgl;
@@ -47,7 +49,11 @@ public class ControllerActivity extends AppCompatActivity {
         //Init UI elements
         seekBarThrottle = (SeekBar) findViewById(R.id.seekBarThrottle);
         seekBarSteer = (SeekBar) findViewById(R.id.seekBarSteer);
+
+        progressBarDistanceSensor = (ProgressBar) findViewById(R.id.progressBarDistanceSensor);
+
         listViewMessages = (ListView) findViewById(R.id.listViewMessages);
+
         buttonEmergencyBreak = (Button) findViewById(R.id.buttonEmergencyBreak);
         buttonLedTgl = (Button) findViewById(R.id.buttonLedTgl);
 
@@ -73,9 +79,7 @@ public class ControllerActivity extends AppCompatActivity {
     }
 
     private void initLedToggle() {
-        buttonLedTgl.setOnClickListener((View view) -> {
-            messageService.sendMessage(new RCCPMessage(EStatusCode.LED_TOGGLE, 0));
-        });
+        buttonLedTgl.setOnClickListener((View view) -> messageService.sendMessage(new RCCPMessage(EStatusCode.LED_TOGGLE, 0)));
     }
 
     protected void initEmergencyBreak() {
@@ -128,6 +132,7 @@ public class ControllerActivity extends AppCompatActivity {
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
                 int throttle = i - (seekBarThrottle.getMax() / 2);
                 carController.setThrottle(throttle);
+
             }
 
             @Override
@@ -149,10 +154,17 @@ public class ControllerActivity extends AppCompatActivity {
             adapter.clear();
             adapter.addAll(messageService.sentMessages);
             int percentage = (int)((((double)messageService.numAck)/messageService.sentMessages.size())*100);
-            textViewAckPerc.setText(Integer.toString(percentage) + "%");
+
+            String out = Integer.toString(percentage) + "%";
+            textViewAckPerc.setText(out);
         });
     }
 
+
+    public void updateDistanceView(int distance) {
+        System.out.println("Setting distance sensor value to" + Integer.toString(distance));
+        runOnUiThread(() -> progressBarDistanceSensor.setProgress(distance));
+    }
 
     @Override
     protected void onStop(){
@@ -165,4 +177,6 @@ public class ControllerActivity extends AppCompatActivity {
         messageService.stop();
         super.onPause();
     }
+
+
 }

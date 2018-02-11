@@ -3,9 +3,11 @@ package com.example.nicolasdarr.rccontroller.Util;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
+import android.preference.PreferenceManager;
 
 import com.felhr.usbserial.UsbSerialDevice;
 import com.felhr.usbserial.UsbSerialInterface;
@@ -19,6 +21,12 @@ public class Devices {
     public static UsbSerialDevice uartDevice;
 
     public static boolean initDevice(Context context){
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        int baudrate = Integer.parseInt(preferences.getString("connection_baudrate", "38400"));
+        int databits = Integer.parseInt(preferences.getString("connection_databits", "8"));
+        int stopbits = Integer.parseInt(preferences.getString("connection_stopbits", "1"));
+
         UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
         UsbDevice device = null;
         UsbDeviceConnection connection = null;
@@ -58,6 +66,7 @@ public class Devices {
         else{
             return false;
         }
+
         uartDevice = UsbSerialDevice.createUsbSerialDevice(device, connection);
         if(uartDevice != null)
         {
@@ -65,9 +74,9 @@ public class Devices {
             {
                 // Devices are opened with default values, Usually 9600,8,1,None,OFF
                 // CDC driver default values 115200,8,1,None,OFF
-                uartDevice.setBaudRate(38400);
-                uartDevice.setDataBits(UsbSerialInterface.DATA_BITS_8);
-                uartDevice.setStopBits(UsbSerialInterface.STOP_BITS_1);
+                uartDevice.setBaudRate(baudrate);
+                uartDevice.setDataBits(databits);
+                uartDevice.setStopBits(stopbits);
                 uartDevice.setParity(UsbSerialInterface.PARITY_NONE);
                 uartDevice.setFlowControl(UsbSerialInterface.FLOW_CONTROL_OFF);
                 return true;
