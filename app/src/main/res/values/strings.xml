@@ -5,12 +5,9 @@
     <string name="title_activity_settings">Settings</string>
 
     <!-- Strings related to Settings -->
-    <string name="pref_header_general">General</string>
+    <string name="pref_header_general">UART</string>
     <string name="pref_header_messages">Messages</string>
 
-
-    <string name="pref_title_display_name">Display name</string>
-    <string name="pref_default_display_name">John Smith</string>
 
     <string name="pref_title_baudrate">Baudrate</string>
     <string-array name="pref_baudrate_titles">
