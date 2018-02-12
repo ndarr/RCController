@@ -24,7 +24,9 @@ public class MessageService implements Serializable{
 
     public ArrayList<RCCPMessage> sentMessages = new ArrayList<>();
 
-    private static Thread senderThread;
+    private static SenderThread senderThread;
+
+
 
 
 
@@ -34,7 +36,15 @@ public class MessageService implements Serializable{
     private Context context;
 
     private CarController carController;
+    private Recorder recorder;
 
+
+
+    public MessageService(Context context, CarController carController){
+        this.context = context;
+        this.carController = carController;
+        this.recorder = new Recorder();
+    }
 
     //TODO: Cleanup this method
     private UsbSerialInterface.UsbReadCallback mCallback = data -> {
@@ -83,17 +93,13 @@ public class MessageService implements Serializable{
         }
     };
 
-    public MessageService(Context context, CarController carController){
-        this.context = context;
-        this.carController = carController;
-    }
-
     /**
      * Starts the sending and receiving of messages
      *
      */
     public void start(){
-        uartDevice.read(mCallback);
+        //TODO: Remove comment after testing
+        //uartDevice.read(mCallback);
         startSending();
     }
 
@@ -101,12 +107,12 @@ public class MessageService implements Serializable{
      * Stops the sending and receiving of messages
      */
     public void stop(){
-        try{
-            senderThread.interrupt();
-        }catch (Exception e){
+        senderThread.stopSending();
+        try {
+            senderThread.join();
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
     }
 
     /**
@@ -114,33 +120,13 @@ public class MessageService implements Serializable{
      */
     //TODO: Cleanup this method
     private void startSending() {
+        //Get message rate from preferences
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         final int rate = 1000 / Integer.parseInt(preferences.getString("messages_per_second", "5"));
-        senderThread = new Thread() {
-            @Override
-            public void run() {
-                RCCPMessage throttleMessage;
-                RCCPMessage steeringMessage;
-                while (true) {
-                    throttleMessage = carController.getThrottleMessage();
-                    sendMessage(throttleMessage);
-                    try {
-                        sleep(rate);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    steeringMessage = carController.getSteeringMessage();
-                    sendMessage(steeringMessage);
-                    try {
-                        sleep(rate);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        };
-        senderThread.setName("Sender Thread");
-        senderThread.start();
+
+        //Setup sender thread and start it
+        senderThread = new SenderThread(this, carController, rate);
+        senderThread.startSending();
     }
 
     /**
@@ -148,9 +134,13 @@ public class MessageService implements Serializable{
      * @param message   RCCPMessage to be sent
      */
     public void sendMessage(RCCPMessage message){
+        if(recorder.isRecording()){
+            recorder.addMessageToRecords(message);
+        }
         sentMessages.add(message);
         notifyDataset();
-        uartDevice.write(message.toByteArray());
+        //TODO: Remove comment after testing
+        //uartDevice.write(message.toByteArray());
     }
 
 
@@ -192,11 +182,37 @@ public class MessageService implements Serializable{
     }
 
 
+    public void startRecording(){
+        recorder.startRecording();
+    }
+
+    public void stopRecording(){
+        recorder.stopRecording();
+    }
+
+    public void startPlayback() {
+        senderThread.playbackMessages(recorder.getRecordedMessages());
+    }
+
+    public boolean isRecording(){
+        return recorder.isRecording();
+    }
+
     private void updateDistance(int distance){
         try{
             ControllerActivity activity = (ControllerActivity)context;
             activity.updateDistanceView(distance);
         }catch (ClassCastException e) {
+            Throwable t = new Throwable("MessageService initialized with wrong activity. Context must be of type ControllerActivity");
+            e.initCause(t);
+        }
+    }
+
+    void finishedPlayback(){
+        try{
+            ControllerActivity activity = (ControllerActivity)context;
+            activity.finishedPlayback();
+        }catch (ClassCastException e){
             Throwable t = new Throwable("MessageService initialized with wrong activity. Context must be of type ControllerActivity");
             e.initCause(t);
         }
