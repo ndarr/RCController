@@ -69,20 +69,6 @@
         android:transcriptMode="alwaysScroll"
         android:stackFromBottom="true"/>
 
-    <Button
-        android:id="@+id/buttonLedTgl"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="230dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:text="Toggle LED"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/buttonEmergencyBreak" />
-
     <TextView
         android:id="@+id/textViewAckPerc"
         android:layout_width="wrap_content"
@@ -91,8 +77,9 @@
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
+        android:text="Paket Loss: 0%"
         app:layout_constraintBottom_toTopOf="@+id/seekBarThrottle"
-        app:layout_constraintEnd_toStartOf="@+id/buttonLedTgl"
+        app:layout_constraintEnd_toStartOf="@+id/buttonEmergencyBreak"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/listViewMessages" />
 
@@ -113,5 +100,34 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/buttonEmergencyBreak"
         app:layout_constraintTop_toBottomOf="@+id/listViewMessages" />
+
+    <LinearLayout
+        android:layout_width="75dp"
+        android:layout_height="40dp"
+        android:layout_marginBottom="60dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@+id/seekBarSteer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/progressBarDistanceSensor">
+
+        <Button
+            android:id="@+id/btnRecord"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/ic_record_red_24dp" />
+
+        <Button
+            android:id="@+id/btnPlay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/ic_play_darkgrey_24dp" />
+
+    </LinearLayout>
 
 </android.support.constraint.ConstraintLayout>

@@ -1,5 +1,7 @@
 package com.example.nicolasdarr.rccontroller.Controller;
 
+import android.content.Context;
+import android.graphics.drawable.DrawableContainer;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -16,6 +18,7 @@ import com.example.nicolasdarr.rccontroller.MessageService.MessageService;
 import com.example.nicolasdarr.rccontroller.MessageService.RCCPMessage;
 import com.example.nicolasdarr.rccontroller.R;
 
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 
 public class ControllerActivity extends AppCompatActivity {
@@ -27,6 +30,9 @@ public class ControllerActivity extends AppCompatActivity {
 
     Button buttonEmergencyBreak;
     Button buttonLedTgl;
+
+    Button btnRecord;
+    Button btnPlay;
 
     TextView textViewAckPerc;
 
@@ -55,7 +61,7 @@ public class ControllerActivity extends AppCompatActivity {
         listViewMessages = (ListView) findViewById(R.id.listViewMessages);
 
         buttonEmergencyBreak = (Button) findViewById(R.id.buttonEmergencyBreak);
-        buttonLedTgl = (Button) findViewById(R.id.buttonLedTgl);
+        //buttonLedTgl = (Button) findViewById(R.id.buttonLedTgl);
 
         textViewAckPerc = (TextView) findViewById(R.id.textViewAckPerc);
 
@@ -73,9 +79,43 @@ public class ControllerActivity extends AppCompatActivity {
 
         initEmergencyBreak();
 
-        initLedToggle();
+        initPlayback();
 
         messageService.start();
+    }
+
+    private void initPlayback(){
+        btnPlay = (Button) findViewById(R.id.btnPlay);
+        btnRecord = (Button) findViewById(R.id.btnRecord);
+
+        btnPlay.setEnabled(false);
+        btnPlay.setBackground(this.getDrawable(R.drawable.ic_play_disabled_lightgrey_24dp));
+
+        btnRecord.setOnClickListener(v -> {
+            if(messageService.isRecording()){
+                System.out.println("Already recording! Stopping record!");
+                messageService.stopRecording();
+                btnPlay.setEnabled(true);
+                btnPlay.setBackground(this.getDrawable(R.drawable.ic_play_darkgrey_24dp));
+                btnRecord.setBackground(this.getDrawable(R.drawable.ic_record_red_24dp));
+            }
+            else {
+                System.out.println("Starting Recording");
+                messageService.startRecording();
+                btnRecord.setBackground(this.getDrawable(R.drawable.ic_stop_darkgrey_24dp));
+            }
+        } );
+
+        btnPlay.setOnClickListener(v -> {
+            System.out.println("Starting Playback!");
+            messageService.startPlayback();
+            seekBarSteer.setEnabled(false);
+            seekBarThrottle.setEnabled(false);
+            btnPlay.setEnabled(false);
+            btnPlay.setBackground(this.getDrawable(R.drawable.ic_play_disabled_lightgrey_24dp));
+            btnRecord.setEnabled(false);
+            btnRecord.setBackground(this.getDrawable(R.drawable.ic_record_disabled_red_24dp));
+        });
     }
 
     private void initLedToggle() {
@@ -153,9 +193,9 @@ public class ControllerActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             adapter.clear();
             adapter.addAll(messageService.sentMessages);
-            int percentage = (int)((((double)messageService.numAck)/messageService.sentMessages.size())*100);
+            int percentage = 100 - (int)((((double)messageService.numAck)/messageService.sentMessages.size())*100);
 
-            String out = Integer.toString(percentage) + "%";
+            String out = "Paket Loss: " + Integer.toString(percentage) + "%";
             textViewAckPerc.setText(out);
         });
     }
@@ -164,6 +204,18 @@ public class ControllerActivity extends AppCompatActivity {
     public void updateDistanceView(int distance) {
         System.out.println("Setting distance sensor value to" + Integer.toString(distance));
         runOnUiThread(() -> progressBarDistanceSensor.setProgress(distance));
+    }
+
+    public void finishedPlayback() {
+        System.out.println("Playback is finished!");
+        runOnUiThread(() -> {
+            seekBarSteer.setEnabled(true);
+            seekBarThrottle.setEnabled(true);
+            btnPlay.setEnabled(true);
+            btnPlay.setBackground(this.getDrawable(R.drawable.ic_play_darkgrey_24dp));
+            btnRecord.setEnabled(true);
+            btnRecord.setBackground(this.getDrawable(R.drawable.ic_record_red_24dp));
+        });
     }
 
     @Override
@@ -177,6 +229,4 @@ public class ControllerActivity extends AppCompatActivity {
         messageService.stop();
         super.onPause();
     }
-
-
 }
