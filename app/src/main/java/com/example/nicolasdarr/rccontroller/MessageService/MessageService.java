@@ -8,6 +8,7 @@ import com.example.nicolasdarr.rccontroller.Car.CarController;
 import com.example.nicolasdarr.rccontroller.Controller.ControllerActivity;
 import com.example.nicolasdarr.rccontroller.Util.Array;
 import com.felhr.usbserial.UsbSerialInterface;
+import com.felhr.usbserial.UsbSerialInterface.UsbReadCallback;
 
 import java.io.Serializable;
 
@@ -38,28 +39,51 @@ public class MessageService implements Serializable{
     private CarController carController;
     private Recorder recorder;
 
+    private UsbReadCallback mCallback;
 
 
+    /**
+     * Constructor setting up basic requirements to make
+     * @param context  Used to interact with UI elements
+     * @param carController represents the current state of the car
+     */
     public MessageService(Context context, CarController carController){
         this.context = context;
         this.carController = carController;
         this.recorder = new Recorder();
+
+        this.mCallback = data -> {
+            readDataCallback(data);
+        };
     }
 
-    //TODO: Cleanup this method
-    private UsbSerialInterface.UsbReadCallback mCallback = data -> {
 
+    /**
+     * Appends data from byteBuffer or writes data into it if the length is less than 12 byte
+     * @param data
+     * @return
+     */
+    private byte[] formatReadData(byte[] data){
         if(byteBuffer != null){
             data = Array.concatenate(byteBuffer, data);
             byteBuffer = null;
+            return data;
         }
 
         if(data.length < 12){
             byteBuffer = data;
-            return;
+            return null;
         }
+        return data;
+    }
 
-        System.out.println("Rcvd RawBytes: " + Arrays.toString(data));
+
+    /**
+     * Splits a byte Array into RCCPMessages
+     * @param data  unformated byte array
+     * @return  List containing all parsed messages
+     */
+    private ArrayList<RCCPMessage> splitData(byte[] data){
         ArrayList<RCCPMessage> receivedMessages = new ArrayList<>();
         int numMessages = data.length / 12;
 
@@ -75,31 +99,56 @@ public class MessageService implements Serializable{
             byteBuffer = Arrays.copyOfRange(data, 12*(i+1), data.length);
 
         }
-        for (RCCPMessage message: receivedMessages) {
+        return receivedMessages;
+    }
+
+
+    /**
+     * Call back method for usb read event
+     * @param data  Data read from usb interface
+     */
+    private void readDataCallback(byte[] data){
+        data = formatReadData(data);
+        if(data == null){
+            return;
+        }
+
+        System.out.println("Rcvd RawBytes: " + Arrays.toString(data));
+
+        for (RCCPMessage message: splitData(data)) {
             if(message == null || !message.isValid()){
                 //uartDevice.read(new byte[1], 1);
                 System.out.println("Message not valid");
             }
             else{
-                if(message.getCode() == EStatusCode.ACK){
-                    acknowledgeMessage(message);
-                }
-                else{
-                    if(message.getCode() == EStatusCode.TRANSMIT_DISTANCE_SENSOR_VALUE){
-                        updateDistance(message.getPayload());
-                    }
-                }
+                disposeMessage(message);
             }
         }
-    };
+    }
+
+
+
+    /**
+     * Determines the next processing steps based on the Status Code
+     * @param message   message which is processed
+     */
+    private void disposeMessage(RCCPMessage message) {
+        if(message.getCode() == EStatusCode.ACK){
+            acknowledgeMessage(message);
+        }
+        else{
+            if(message.getCode() == EStatusCode.TRANSMIT_DISTANCE_SENSOR_VALUE){
+                updateDistance(message.getPayload());
+            }
+        }
+    }
 
     /**
      * Starts the sending and receiving of messages
      *
      */
     public void start(){
-        //TODO: Remove comment after testing
-        //uartDevice.read(mCallback);
+        uartDevice.read(mCallback);
         startSending();
     }
 
@@ -139,8 +188,8 @@ public class MessageService implements Serializable{
         }
         sentMessages.add(message);
         notifyDataset();
-        //TODO: Remove comment after testing
-        //uartDevice.write(message.toByteArray());
+
+        uartDevice.write(message.toByteArray());
     }
 
 
@@ -208,6 +257,10 @@ public class MessageService implements Serializable{
         }
     }
 
+
+    /**
+     * UI is notified about finished playback
+     */
     void finishedPlayback(){
         try{
             ControllerActivity activity = (ControllerActivity)context;

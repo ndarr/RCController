@@ -23,11 +23,6 @@ public class Devices {
 
     //TODO: Cleanup
     public static boolean initDevice(Context context){
-
-
-        if(true){
-            return true;
-        }
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         int baudrate = Integer.parseInt(preferences.getString("connection_baudrate", "38400"));
         int databits = Integer.parseInt(preferences.getString("connection_databits", "8"));

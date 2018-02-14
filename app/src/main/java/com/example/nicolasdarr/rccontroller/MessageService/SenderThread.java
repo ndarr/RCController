@@ -71,7 +71,6 @@ public class SenderThread extends Thread{
 
     private void startPlayback(){
         for(RCCPMessage message: recordedMessages){
-            //TODO: Create new message with new seq number
             messageService.sendMessage(new RCCPMessage(message.getCode(), message.getPayload()));
             try {
                 this.sleep(rate);
