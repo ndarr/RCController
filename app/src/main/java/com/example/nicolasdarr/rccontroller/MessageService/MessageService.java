@@ -7,7 +7,6 @@ import android.preference.PreferenceManager;
 import com.example.nicolasdarr.rccontroller.Car.CarController;
 import com.example.nicolasdarr.rccontroller.Controller.ControllerActivity;
 import com.example.nicolasdarr.rccontroller.Util.Array;
-import com.felhr.usbserial.UsbSerialInterface;
 import com.felhr.usbserial.UsbSerialInterface.UsbReadCallback;
 
 import java.io.Serializable;
@@ -19,6 +18,7 @@ import static com.example.nicolasdarr.rccontroller.Util.Devices.uartDevice;
 
 /**
  * Created by Nicolas on 22.11.2017.
+ *
  */
 
 public class MessageService implements Serializable{
@@ -26,9 +26,6 @@ public class MessageService implements Serializable{
     public ArrayList<RCCPMessage> sentMessages = new ArrayList<>();
 
     private static SenderThread senderThread;
-
-
-
 
 
     public int numAck = 0;
@@ -52,16 +49,14 @@ public class MessageService implements Serializable{
         this.carController = carController;
         this.recorder = new Recorder();
 
-        this.mCallback = data -> {
-            readDataCallback(data);
-        };
+        this.mCallback = this::readDataCallback;
     }
 
 
     /**
      * Appends data from byteBuffer or writes data into it if the length is less than 12 byte
-     * @param data
-     * @return
+     * @param data Array which contains the read raw data
+     * @return Cleared array if not enough bytes or array containing buffer + data
      */
     private byte[] formatReadData(byte[] data){
         if(byteBuffer != null){
@@ -117,7 +112,6 @@ public class MessageService implements Serializable{
 
         for (RCCPMessage message: splitData(data)) {
             if(message == null || !message.isValid()){
-                //uartDevice.read(new byte[1], 1);
                 System.out.println("Message not valid");
             }
             else{
@@ -135,6 +129,8 @@ public class MessageService implements Serializable{
     private void disposeMessage(RCCPMessage message) {
         if(message.getCode() == EStatusCode.ACK){
             acknowledgeMessage(message);
+            int distance = (int) (Math.random() * 100);
+            updateDistance(distance);
         }
         else{
             if(message.getCode() == EStatusCode.TRANSMIT_DISTANCE_SENSOR_VALUE){
@@ -167,7 +163,6 @@ public class MessageService implements Serializable{
     /**
      * Initializes and starts the thread for sending messages
      */
-    //TODO: Cleanup this method
     private void startSending() {
         //Get message rate from preferences
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);

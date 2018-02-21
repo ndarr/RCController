@@ -14,10 +14,12 @@ public class CarController {
     public CarController(){}
 
     public RCCPMessage getSteeringMessage(){
+
+        System.out.println("Constructing steering message:" + Integer.toString(steering));
         if(steering < 0){
             //Invert because steering is negative
-            steering *= -1;
-            return new RCCPMessage(EStatusCode.SET_STEERING_LEFT, steering);
+            int steer = steering * (-1);
+            return new RCCPMessage(EStatusCode.SET_STEERING_LEFT, steer);
         }
         else if(steering > 0){
             return new RCCPMessage(EStatusCode.SET_STEERING_RIGHT, steering);

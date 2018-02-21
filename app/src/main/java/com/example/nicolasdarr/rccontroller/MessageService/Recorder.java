@@ -4,29 +4,25 @@ import java.util.ArrayList;
 
 /**
  * Created by nicolasdarr on 12.02.18.
+ * Used for recording messages
  */
 
-public class Recorder {
+class Recorder {
 
     private ArrayList<RCCPMessage> recordedMessages;
 
     private boolean recording;
-    private boolean playback;
 
-    public void startRecording() {
+    void startRecording() {
         recordedMessages = new ArrayList<>();
         recording = true;
     }
 
-    public void stopRecording(){
+    void stopRecording(){
         recording = false;
     }
 
-    public void startPlayback(){
-        playback = true;
-    }
-
-    public boolean isRecording(){
+    boolean isRecording(){
         return recording;
     }
 
@@ -37,12 +33,5 @@ public class Recorder {
 
     ArrayList<RCCPMessage> getRecordedMessages() {
         return recordedMessages;
-    }
-
-    public boolean isPlayback() {
-        return playback;
-    }
-
-    public void stopPlayback() {
     }
 }

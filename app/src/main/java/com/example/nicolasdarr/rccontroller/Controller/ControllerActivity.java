@@ -1,7 +1,5 @@
 package com.example.nicolasdarr.rccontroller.Controller;
 
-import android.content.Context;
-import android.graphics.drawable.DrawableContainer;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -11,14 +9,11 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
-
 import com.example.nicolasdarr.rccontroller.Car.CarController;
 import com.example.nicolasdarr.rccontroller.MessageService.EStatusCode;
 import com.example.nicolasdarr.rccontroller.MessageService.MessageService;
 import com.example.nicolasdarr.rccontroller.MessageService.RCCPMessage;
 import com.example.nicolasdarr.rccontroller.R;
-
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 
 public class ControllerActivity extends AppCompatActivity {
@@ -29,7 +24,6 @@ public class ControllerActivity extends AppCompatActivity {
     ProgressBar progressBarDistanceSensor;
 
     Button buttonEmergencyBreak;
-    Button buttonLedTgl;
 
     Button btnRecord;
     Button btnPlay;
@@ -118,10 +112,6 @@ public class ControllerActivity extends AppCompatActivity {
         });
     }
 
-    private void initLedToggle() {
-        buttonLedTgl.setOnClickListener((View view) -> messageService.sendMessage(new RCCPMessage(EStatusCode.LED_TOGGLE, 0)));
-    }
-
     protected void initEmergencyBreak() {
         buttonEmergencyBreak.setOnClickListener((View view) -> {
 
@@ -152,6 +142,7 @@ public class ControllerActivity extends AppCompatActivity {
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
                 int steering = i - (seekBarThrottle.getMax() / 2);
                 carController.setSteering(steering);
+                System.out.println("Setting steering to " + Integer.toString(steering));
             }
 
             @Override
