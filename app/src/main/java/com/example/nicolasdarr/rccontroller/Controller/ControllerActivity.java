@@ -96,6 +96,8 @@ public class ControllerActivity extends AppCompatActivity {
             else {
                 System.out.println("Starting Recording");
                 messageService.startRecording();
+                btnPlay.setEnabled(false);
+                btnPlay.setBackground(this.getDrawable(R.drawable.ic_play_disabled_lightgrey_24dp));
                 btnRecord.setBackground(this.getDrawable(R.drawable.ic_stop_darkgrey_24dp));
             }
         } );

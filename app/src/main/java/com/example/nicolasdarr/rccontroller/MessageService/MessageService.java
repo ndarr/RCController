@@ -129,8 +129,6 @@ public class MessageService implements Serializable{
     private void disposeMessage(RCCPMessage message) {
         if(message.getCode() == EStatusCode.ACK){
             acknowledgeMessage(message);
-            int distance = (int) (Math.random() * 100);
-            updateDistance(distance);
         }
         else{
             if(message.getCode() == EStatusCode.TRANSMIT_DISTANCE_SENSOR_VALUE){

@@ -58,6 +58,7 @@ public class SenderThread extends Thread{
             if(requestDistance % 10 == 0){
                 requestDistance = 0;
                 messageService.sendMessage(new RCCPMessage(EStatusCode.REQUEST_DISTANCE_SENSOR_VALUE, 0));
+                System.out.println("Requesting Distance");
             }
             requestDistance++;
         }
